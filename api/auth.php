@@ -38,6 +38,9 @@ switch ($action) {
     case 'approve_user':
         handle_approve_user($pdo, $input);
         break;
+    case 'delete_user':
+        handle_delete_user($pdo, $input);
+        break;
     default:
         rdes_json(['ok' => false, 'message' => 'Unknown action'], 400);
 }
@@ -222,4 +225,38 @@ function handle_approve_user(PDO $pdo, array $input): void
 
     rdes_json(['ok' => true]);
 }
+
+/**
+ * Permanently delete a user and their log entries.
+ *
+ * After deletion, the same email can be used to register again
+ * because the UNIQUE email row is removed.
+ */
+function handle_delete_user(PDO $pdo, array $input): void
+{
+    $email = strtolower(trim((string)($input['email'] ?? '')));
+    if ($email === '') {
+        rdes_json(['ok' => false, 'message' => 'Email is required.'], 400);
+    }
+
+    // Find user id first
+    $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
+    $stmt->execute(['email' => $email]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        rdes_json(['ok' => false, 'message' => 'User not found.'], 404);
+    }
+    $userId = (int)$row['id'];
+
+    // Delete related log entries so there are no orphaned records.
+    $delLogs = $pdo->prepare('DELETE FROM log_entries WHERE user_id = :uid');
+    $delLogs->execute(['uid' => $userId]);
+
+    // Delete the user record.
+    $delUser = $pdo->prepare('DELETE FROM users WHERE id = :uid');
+    $delUser->execute(['uid' => $userId]);
+
+    rdes_json(['ok' => true]);
+}
+
 

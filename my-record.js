@@ -25,6 +25,7 @@
   }
 
   const STORAGE_KEY = 'rdes-logbook-entries';
+  const LOGS_API_URL = 'api/logs.php';
   const PAGE_SIZE = 10;
 
   var personsPage = 1;
@@ -41,6 +42,21 @@
   } else {
     if (personsTitle) personsTitle.textContent = 'Records by person (OJT folder)';
     if (personsDesc) personsDesc.textContent = 'At the end of OJT, each person can download their own time in/out record as a file for their folder.';
+  }
+
+  async function syncEntriesFromServer() {
+    try {
+      const res = await fetch(LOGS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list_entries' })
+      });
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.entries)) return;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data.entries));
+    } catch (_) {
+      // Ignore sync failures; page will use whatever it has.
+    }
   }
 
   function getEntries() {
@@ -180,5 +196,10 @@
     URL.revokeObjectURL(url);
   }
 
-  renderPersonsList();
+  async function init() {
+    await syncEntriesFromServer();
+    renderPersonsList();
+  }
+
+  init();
 })();

@@ -5,6 +5,7 @@
 
   const currentUser = window.RDESAuth.getCurrentUser();
   const STORAGE_KEY = 'rdes-logbook-entries';
+  const LOGS_API_URL = 'api/logs.php';
 
   const clockDisplay = document.getElementById('clockDisplay');
   const dateDisplay = document.getElementById('dateDisplay');
@@ -57,6 +58,25 @@
     });
   }
 
+  async function sendEntryToServer(entry) {
+    try {
+      if (!currentUser || !currentUser.id) return;
+      await fetch(LOGS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add_entry',
+          userId: currentUser.id,
+          name: entry.name,
+          logAction: entry.action,
+          timestamp: entry.timestamp
+        })
+      });
+    } catch (_) {
+      // Silently ignore; local copy still works.
+    }
+  }
+
   function addEntry(name, action) {
     const trimmed = (currentUser && currentUser.name) ? currentUser.name.trim() : (name || '').trim();
     if (!trimmed) {
@@ -94,6 +114,9 @@
     const entries = getEntries();
     entries.unshift(entry);
     saveEntries(entries);
+
+    // Also send to shared database so other devices can see it.
+    sendEntryToServer(entry);
 
     const actionLabel = action === 'time_in' ? 'Time In' : 'Time Out';
     lastAction.textContent = `${actionLabel} recorded for ${trimmed} at ${entry.time}.`;

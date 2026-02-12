@@ -151,6 +151,16 @@
     return !!data.ok;
   }
 
+  async function deleteUserRemote(email) {
+    const res = await fetch(AUTH_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete_user', email: email })
+    });
+    const data = await res.json();
+    return !!data.ok;
+  }
+
   window.RDESAuth = {
     getCurrentUser: getCurrentUser,
     requireAuth: requireAuth,
@@ -159,6 +169,7 @@
     signUp: signUp,
     // Remote, DB-backed helpers for admin screens
     getUsersList: getUsersListRemote,
-    approveUser: approveUserRemote
+    approveUser: approveUserRemote,
+    deleteUser: deleteUserRemote
   };
 })();

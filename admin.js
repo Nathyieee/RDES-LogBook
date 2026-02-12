@@ -37,9 +37,17 @@
     usersBody.innerHTML = users.map(function (u) {
       var status = u.approved ? '<span class="badge badge-in">Approved</span>' : '<span class="badge badge-out">Pending</span>';
       var roleLabel = u.role === 'admin' ? 'Admin' : 'OJT';
-      var action = u.approved
-        ? '<span class="muted">—</span>'
-        : '<button type="button" class="btn btn-small btn-primary btn-approve" data-email="' + escapeHtml(u.email) + '">Approve</button>';
+
+      var buttons = [];
+      if (!u.approved) {
+        buttons.push('<button type="button" class="btn btn-small btn-primary btn-approve" data-email="' + escapeHtml(u.email) + '">Approve</button>');
+      }
+      // Allow deleting any account except your own (current admin).
+      if (!currentUser || (u.email || '').toLowerCase() !== (currentUser.email || '').toLowerCase()) {
+        buttons.push('<button type="button" class="btn btn-small btn-delete-user" data-email="' + escapeHtml(u.email) + '">Delete</button>');
+      }
+      var action = buttons.length ? buttons.join(' ') : '<span class="muted">—</span>';
+
       return '<tr><td>' + escapeHtml(u.name) + '</td><td>' + escapeHtml(u.email) + '</td><td>' + roleLabel + '</td><td>' + status + '</td><td>' + action + '</td></tr>';
     }).join('');
 
@@ -49,6 +57,23 @@
         if (!email) return;
         window.RDESAuth.approveUser(email).then(function (ok) {
           if (ok) render();
+        });
+      });
+    });
+
+    usersBody.querySelectorAll('.btn-delete-user').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var email = btn.getAttribute('data-email');
+        if (!email) return;
+        if (!window.confirm('Delete this account permanently? This will also remove their time log entries.')) {
+          return;
+        }
+        window.RDESAuth.deleteUser(email).then(function (ok) {
+          if (ok) {
+            render();
+          } else {
+            alert('Failed to delete user. Please try again.');
+          }
         });
       });
     });

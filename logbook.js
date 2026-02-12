@@ -14,6 +14,7 @@
   if (navAdmin) navAdmin.style.display = currentUser && currentUser.role === 'admin' ? '' : 'none';
 
   const STORAGE_KEY = 'rdes-logbook-entries';
+  const LOGS_API_URL = 'api/logs.php';
   const PAGE_SIZE = 10;
 
   var logbookPage = 1;
@@ -55,6 +56,21 @@
 
   function saveEntries(entries) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  async function syncEntriesFromServer() {
+    try {
+      const res = await fetch(LOGS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list_entries' })
+      });
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.entries)) return;
+      saveEntries(data.entries);
+    } catch (_) {
+      // If it fails, keep whatever is in localStorage.
+    }
   }
 
   function showDeleteModal(entryId, callback) {
@@ -312,8 +328,13 @@
   if (filterName) filterName.addEventListener('change', renderTable);
   if (filterAction) filterAction.addEventListener('change', renderTable);
 
-  if (filterDate) filterDate.value = 'today';
-  showCustomDateFields();
-  renderNameFilter();
-  renderTable();
+  async function init() {
+    if (filterDate) filterDate.value = 'today';
+    showCustomDateFields();
+    await syncEntriesFromServer();
+    renderNameFilter();
+    renderTable();
+  }
+
+  init();
 })();

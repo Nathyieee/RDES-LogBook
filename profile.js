@@ -30,6 +30,7 @@
 
   const STORAGE_KEY = 'rdes-logbook-entries';
   const USERS_KEY = 'rdes-users';
+  const LOGS_API_URL = 'api/logs.php';
 
   function getUsers() {
     try {
@@ -46,6 +47,21 @@
       return raw ? JSON.parse(raw) : [];
     } catch (_) {
       return [];
+    }
+  }
+
+  async function syncEntriesFromServer() {
+    try {
+      const res = await fetch(LOGS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list_entries' })
+      });
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.entries)) return;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data.entries));
+    } catch (_) {
+      // ignore sync failures
     }
   }
 
@@ -143,5 +159,10 @@
     if (progressBarFill) progressBarFill.style.width = progress + '%';
   }
 
-  renderProfile();
+  async function init() {
+    await syncEntriesFromServer();
+    renderProfile();
+  }
+
+  init();
 })();
