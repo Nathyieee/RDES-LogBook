@@ -1,22 +1,10 @@
 (function () {
   'use strict';
 
-  const USERS_KEY = 'rdes-users';
   const CURRENT_USER_KEY = 'rdes-current-user';
   const AUTH_PAGE = 'auth.html';
 
-  function getUsers() {
-    try {
-      const raw = localStorage.getItem(USERS_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  function saveUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  }
+  const AUTH_API_URL = 'api/auth.php';
 
   function getCurrentUser() {
     try {
@@ -79,14 +67,17 @@
   }
 
   async function signIn(email, password) {
-    const users = getUsers();
-    const normalized = (email || '').trim().toLowerCase();
-    const user = users.find(function (u) { return (u.email || '').toLowerCase() === normalized; });
-    if (!user) return { ok: false, message: 'Email not found.' };
-    const hash = await hashPassword(password);
-    if (user.passwordHash !== hash) return { ok: false, message: 'Incorrect password.' };
-    if (user.approved === false) return { ok: false, message: 'Your account is pending approval by an admin.' };
-    const session = { email: user.email, name: user.name, role: user.role, approved: true };
+    // Send credentials to PHP API (server checks password)
+    const payload = { action: 'sign_in', email: email, password: password };
+    const res = await fetch(AUTH_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data.ok) return { ok: false, message: data.message || 'Sign in failed.' };
+    const user = data.user || {};
+    const session = { email: user.email, name: user.name, role: user.role, approved: true, id: user.id };
     setCurrentUser(session);
     return { ok: true, user: session };
   }
@@ -107,30 +98,57 @@
       if (isNaN(totalHours) || totalHours < 1) return { ok: false, message: 'Total hours needed must be at least 1 hour.' };
     }
 
-    const users = getUsers();
-    if (users.some(function (u) { return (u.email || '').toLowerCase() === trimmedEmail; })) {
-      return { ok: false, message: 'An account with this email already exists.' };
-    }
+    // Send registration to PHP API
+    const payload = {
+      action: 'sign_up',
+      name: trimmedName,
+      email: trimmedEmail,
+      password: password,
+      role: role,
+      ojtStartTime: ojtStartTime,
+      ojtEndTime: ojtEndTime,
+      ojtHoursPerDay: ojtHoursPerDay,
+      ojtTotalHoursRequired: ojtTotalHoursRequired
+    };
 
-    const passwordHash = await hashPassword(password);
-    var isFirstUser = users.length === 0;
-    var approved = isFirstUser && role === 'admin';
-    const newUser = { email: trimmedEmail, name: trimmedName, passwordHash: passwordHash, role: role, approved: approved };
-    if (role === 'ojt') {
-      newUser.ojtStartTime = ojtStartTime;
-      newUser.ojtEndTime = ojtEndTime;
-      newUser.ojtHoursPerDay = String(parseInt(ojtHoursPerDay, 10) || 8);
-      newUser.ojtTotalHoursRequired = String(parseInt(ojtTotalHoursRequired, 10) || '0');
-    }
-    users.push(newUser);
-    saveUsers(users);
+    const res = await fetch(AUTH_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data.ok) return { ok: false, message: data.message || 'Sign up failed.' };
 
-    if (approved) {
-      const session = { email: newUser.email, name: newUser.name, role: newUser.role, approved: true };
+    const user = data.user;
+    if (user && data.redirect === 'index.html') {
+      const session = { email: user.email, name: user.name, role: user.role, approved: true, id: user.id };
       setCurrentUser(session);
       return { ok: true, user: session, redirect: 'index.html' };
     }
-    return { ok: true, user: null, redirect: 'pending-approval.html' };
+    return { ok: true, user: null, redirect: data.redirect || 'pending-approval.html' };
+  }
+
+  async function getUsersListRemote() {
+    const res = await fetch(AUTH_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'list_users' })
+    });
+    const data = await res.json();
+    if (!data.ok || !Array.isArray(data.users)) return [];
+    return data.users.map(function (u) {
+      return { email: u.email, name: u.name, role: u.role, approved: u.approved !== false };
+    });
+  }
+
+  async function approveUserRemote(email) {
+    const res = await fetch(AUTH_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve_user', email: email })
+    });
+    const data = await res.json();
+    return !!data.ok;
   }
 
   window.RDESAuth = {
@@ -139,7 +157,8 @@
     signOut: signOut,
     signIn: signIn,
     signUp: signUp,
-    getUsersList: getUsersList,
-    approveUser: approveUser
+    // Remote, DB-backed helpers for admin screens
+    getUsersList: getUsersListRemote,
+    approveUser: approveUserRemote
   };
 })();

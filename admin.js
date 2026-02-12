@@ -23,8 +23,8 @@
     return div.innerHTML;
   }
 
-  function render() {
-    var users = window.RDESAuth.getUsersList();
+  async function render() {
+    var users = await window.RDESAuth.getUsersList();
     if (!usersBody) return;
 
     if (users.length === 0) {
@@ -47,9 +47,9 @@
       btn.addEventListener('click', function () {
         var email = btn.getAttribute('data-email');
         if (!email) return;
-        if (window.RDESAuth.approveUser(email)) {
-          render();
-        }
+        window.RDESAuth.approveUser(email).then(function (ok) {
+          if (ok) render();
+        });
       });
     });
   }
