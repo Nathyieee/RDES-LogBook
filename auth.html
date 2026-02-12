@@ -79,6 +79,11 @@
                 <label for="signUpOjtHours">Hours per day</label>
                 <input type="number" id="signUpOjtHours" min="1" max="24" value="8" placeholder="8" aria-label="Hours per day">
               </div>
+              <div class="form-group">
+                <label for="signUpOjtTotalHours">Total hours needed to finish</label>
+                <input type="number" id="signUpOjtTotalHours" min="1" step="1" placeholder="e.g. 240" aria-label="Total hours required">
+                <small class="form-hint">Enter the total number of hours required to complete your OJT (e.g., 240 hours)</small>
+              </div>
             </div>
             <p class="auth-message" id="signUpMessage"></p>
             <button type="submit" class="btn btn-in btn-block" id="btnSignUp">Sign Up</button>
@@ -161,12 +166,14 @@
         var ojtStart = document.getElementById('signUpOjtStart');
         var ojtEnd = document.getElementById('signUpOjtEnd');
         var ojtHours = document.getElementById('signUpOjtHours');
+        var ojtTotalHours = document.getElementById('signUpOjtTotalHours');
         var ojtStartTime = ojtStart ? ojtStart.value : '';
         var ojtEndTime = ojtEnd ? ojtEnd.value : '';
         var ojtHoursPerDay = ojtHours ? ojtHours.value : '';
+        var ojtTotalHoursRequired = ojtTotalHours ? ojtTotalHours.value : '';
         signUpMessage.textContent = 'Creating account…';
         signUpMessage.classList.remove('error');
-        window.RDESAuth.signUp(name, email, password, role, ojtStartTime, ojtEndTime, ojtHoursPerDay).then(function (result) {
+        window.RDESAuth.signUp(name, email, password, role, ojtStartTime, ojtEndTime, ojtHoursPerDay, ojtTotalHoursRequired).then(function (result) {
           if (result.ok) {
             window.location.href = result.redirect || 'index.html';
           } else {

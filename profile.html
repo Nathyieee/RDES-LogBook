@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDES LogBook — Profile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app logbook-page">
+    <header class="header">
+      <div class="user-bar" id="userBar">
+        <span class="user-info" id="userInfo"></span>
+        <button type="button" class="btn btn-small btn-ghost" id="btnSignOut">Sign out</button>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Time In / Out</a>
+        <a href="logbook.html" class="nav-link">Logbook</a>
+        <a href="my-record.html" class="nav-link">My Record</a>
+        <a href="profile.html" class="nav-link active">Profile</a>
+        <a href="admin.html" class="nav-link" id="navAdmin" style="display:none">Approve users</a>
+      </nav>
+      <h1 class="logo">Profile</h1>
+      <p class="tagline">Your OJT progress and remaining hours</p>
+    </header>
+
+    <main class="main">
+      <!-- User Info Card -->
+      <section class="profile-card">
+        <h2 class="profile-section-title">Account Information</h2>
+        <div class="profile-info-grid">
+          <div class="profile-info-item">
+            <span class="profile-label">Name</span>
+            <span class="profile-value" id="profileName"></span>
+          </div>
+          <div class="profile-info-item">
+            <span class="profile-label">Email</span>
+            <span class="profile-value" id="profileEmail"></span>
+          </div>
+          <div class="profile-info-item">
+            <span class="profile-label">Role</span>
+            <span class="profile-value" id="profileRole"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- OJT Progress Card (only for OJT) -->
+      <section class="profile-card" id="ojtProgressCard" style="display:none;">
+        <h2 class="profile-section-title">OJT Progress</h2>
+        
+        <div class="progress-stats">
+          <div class="stat-card stat-card-primary">
+            <div class="stat-label">Total Hours Required</div>
+            <div class="stat-value" id="statTotalHours">—</div>
+          </div>
+          <div class="stat-card stat-card-success">
+            <div class="stat-label">Hours Completed</div>
+            <div class="stat-value" id="statHoursCompleted">—</div>
+          </div>
+          <div class="stat-card stat-card-warning">
+            <div class="stat-label">Remaining Hours</div>
+            <div class="stat-value" id="statRemainingHours">—</div>
+          </div>
+          <div class="stat-card stat-card-info">
+            <div class="stat-label">Remaining Days</div>
+            <div class="stat-value" id="statRemainingDays">—</div>
+          </div>
+        </div>
+
+        <div class="progress-bar-container">
+          <div class="progress-bar-label">
+            <span>Progress</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="ojt-schedule-info" id="ojtScheduleInfo">
+          <h3 class="ojt-info-title">OJT Schedule</h3>
+          <div class="ojt-info-grid">
+            <div class="ojt-info-item">
+              <span class="ojt-info-label">Start time</span>
+              <span class="ojt-info-value" id="ojtStartTime">—</span>
+            </div>
+            <div class="ojt-info-item">
+              <span class="ojt-info-label">End time</span>
+              <span class="ojt-info-value" id="ojtEndTime">—</span>
+            </div>
+            <div class="ojt-info-item">
+              <span class="ojt-info-label">Hours per day</span>
+              <span class="ojt-info-value" id="ojtHoursPerDay">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p><a href="index.html">Time In / Out</a> · <a href="logbook.html">Logbook</a> · <a href="my-record.html">My Record</a> · Profile</p>
+    </footer>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>

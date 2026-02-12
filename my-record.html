@@ -3,55 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RDES LogBook — Time In / Time Out</title>
+  <title>RDES LogBook — My Record</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
+  <div class="app logbook-page">
     <header class="header">
       <div class="user-bar" id="userBar">
         <span class="user-info" id="userInfo"></span>
         <button type="button" class="btn btn-small btn-ghost" id="btnSignOut">Sign out</button>
       </div>
       <nav class="nav-links">
-        <a href="index.html" class="nav-link active">Time In / Out</a>
+        <a href="index.html" class="nav-link">Time In / Out</a>
         <a href="logbook.html" class="nav-link">Logbook</a>
-        <a href="my-record.html" class="nav-link">My Record</a>
+        <a href="my-record.html" class="nav-link active">My Record</a>
         <a href="profile.html" class="nav-link">Profile</a>
         <a href="admin.html" class="nav-link" id="navAdmin" style="display:none">Approve users</a>
       </nav>
-      <h1 class="logo">RDES LogBook</h1>
-      <p class="tagline">Office & OJT Time Tracking</p>
+      <h1 class="logo" id="pageTitle">My Record</h1>
+      <p class="tagline" id="pageTagline">Download your time in/out record for your OJT folder</p>
     </header>
 
     <main class="main">
-      <section class="clock-card">
-        <div class="clock-display" id="clockDisplay">--:--:--</div>
-        <p class="date-display" id="dateDisplay"></p>
-      </section>
-
-      <section class="punch-card">
-        <div class="welcome-block">
-          <span class="welcome-label">Welcome</span>
-          <p class="welcome-name" id="welcomeName"></p>
-        </div>
-        <div class="punch-buttons">
-          <button type="button" class="btn btn-in" id="btnTimeIn">Time In</button>
-          <button type="button" class="btn btn-out" id="btnTimeOut">Time Out</button>
-        </div>
-        <p class="last-action" id="lastAction"></p>
+      <!-- OJT: own record only; Admin: Records by person (folder per name) -->
+      <section class="persons-card" id="personsCard">
+        <h2 class="persons-title" id="personsTitle">My record</h2>
+        <p class="persons-desc" id="personsDesc">Download your time in/out record for your OJT folder.</p>
+        <div class="persons-list" id="personsList"></div>
+        <div class="pagination" id="personsPagination" aria-label="Persons list pagination"></div>
+        <p class="empty-persons" id="emptyPersons">No entries yet. Use Time In / Time Out on the main page.</p>
       </section>
     </main>
 
     <footer class="footer">
-      <p>File storage & dashboard — coming soon</p>
+      <p><a href="index.html">Time In / Out</a> · <a href="logbook.html">Logbook</a> · My Record</p>
     </footer>
   </div>
 
   <script src="auth.js"></script>
-  <script src="app.js"></script>
+  <script src="my-record.js"></script>
 </body>
 </html>

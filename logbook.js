@@ -17,7 +17,6 @@
   const PAGE_SIZE = 10;
 
   var logbookPage = 1;
-  var personsPage = 1;
 
   const filterDate = document.getElementById('filterDate');
   const filterDateFrom = document.getElementById('filterDateFrom');
@@ -34,22 +33,14 @@
   const emptyLog = document.getElementById('emptyLog');
   const entryCount = document.getElementById('entryCount');
   const logbookPagination = document.getElementById('logbookPagination');
-  const personsList = document.getElementById('personsList');
-  const personsPagination = document.getElementById('personsPagination');
-  const emptyPersons = document.getElementById('emptyPersons');
-  const personsTitle = document.getElementById('personsTitle');
-  const personsDesc = document.getElementById('personsDesc');
 
   var deleteHeader = document.getElementById('deleteHeader');
   if (isOjt) {
     if (filterNameGroup) filterNameGroup.style.display = 'none';
     if (btnExportAll) btnExportAll.style.display = 'none';
-    if (personsTitle) personsTitle.textContent = 'My record';
-    if (personsDesc) personsDesc.textContent = 'Download your time in/out record for your OJT folder.';
-    if (deleteHeader) deleteHeader.style.display = 'none';
+    // OJT users can delete their own entries, so show delete header
+    if (deleteHeader) deleteHeader.style.display = '';
   } else {
-    if (personsTitle) personsTitle.textContent = 'Records by person (OJT folder)';
-    if (personsDesc) personsDesc.textContent = 'At the end of OJT, each person can download their own time in/out record as a file for their folder.';
     if (deleteHeader) deleteHeader.style.display = '';
   }
 
@@ -231,18 +222,30 @@
     logbookBody.innerHTML = pageEntries.map(function (e) {
       const actionClass = e.action === 'time_in' ? 'badge-in' : 'badge-out';
       const actionLabel = e.action === 'time_in' ? 'Time In' : 'Time Out';
-      var deleteCell = isOjt ? '' : '<td><button type="button" class="btn btn-small btn-delete" data-id="' + escapeHtml(e.id) + '" aria-label="Delete entry">Delete</button></td>';
+      // Show delete button for admins (all entries) or OJT users (only their own entries)
+      var canDelete = !isOjt || (isOjt && currentUser && e.name === currentUser.name);
+      var deleteCell = canDelete ? '<td><button type="button" class="btn btn-small btn-delete" data-id="' + escapeHtml(e.id) + '" aria-label="Delete entry">Delete</button></td>' : '<td></td>';
       return '<tr><td>' + escapeHtml(e.date) + '</td><td>' + escapeHtml(formatTime12(e)) + '</td><td>' + escapeHtml(e.name) + '</td><td><span class="badge ' + actionClass + '">' + actionLabel + '</span></td>' + deleteCell + '</tr>';
     }).join('');
 
-    if (!isOjt) {
-      logbookBody.querySelectorAll('.btn-delete').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var entryId = btn.getAttribute('data-id');
-          if (entryId) deleteEntry(entryId);
-        });
+    // Add delete event listeners for all delete buttons (both admin and OJT)
+    logbookBody.querySelectorAll('.btn-delete').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var entryId = btn.getAttribute('data-id');
+        if (entryId) {
+          // For OJT users, verify the entry belongs to them before deleting
+          if (isOjt && currentUser) {
+            var entries = getEntries();
+            var entry = entries.find(function (e) { return e.id === entryId; });
+            if (entry && entry.name !== currentUser.name) {
+              alert('You can only delete your own entries.');
+              return;
+            }
+          }
+          deleteEntry(entryId);
+        }
       });
-    }
+    });
 
     renderPagination(logbookPagination, logbookPage, entries.length, PAGE_SIZE, function (page) {
       logbookPage = page;
@@ -262,71 +265,6 @@
     }).join('');
   }
 
-  function renderPersonsList() {
-    const entries = getEntries();
-    var names = getUniqueNames(entries);
-    if (isOjt && currentUser) names = [currentUser.name];
-    if (!personsList) return;
-
-    if (names.length === 0) {
-      personsList.innerHTML = '';
-      if (emptyPersons) emptyPersons.classList.add('visible');
-      if (personsPagination) { personsPagination.innerHTML = ''; personsPagination.classList.remove('visible'); }
-      return;
-    }
-    if (emptyPersons) emptyPersons.classList.remove('visible');
-
-    const totalPages = Math.ceil(names.length / PAGE_SIZE);
-    if (personsPage > totalPages) personsPage = totalPages;
-    const start = (personsPage - 1) * PAGE_SIZE;
-    const pageNames = names.slice(start, start + PAGE_SIZE);
-
-    personsList.innerHTML = pageNames.map(function (name) {
-      const count = entries.filter(function (e) { return e.name === name; }).length;
-      const safeName = escapeHtml(name);
-      const fileSlug = name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
-      return '<div class="person-card">' +
-        '<div class="person-info">' +
-          '<span class="person-name">' + safeName + '</span>' +
-          '<span class="person-count">' + count + ' record' + (count !== 1 ? 's' : '') + '</span>' +
-        '</div>' +
-        '<button type="button" class="btn btn-small btn-primary btn-download-record" data-name="' + safeName + '" data-slug="' + escapeHtml(fileSlug) + '">' + (isOjt ? 'Download my record' : 'Download their Record') + '</button>' +
-      '</div>';
-    }).join('');
-
-    personsList.querySelectorAll('.btn-download-record').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const name = btn.getAttribute('data-name');
-        const slug = btn.getAttribute('data-slug') || 'record';
-        exportPersonRecord(name, slug);
-      });
-    });
-
-    renderPagination(personsPagination, personsPage, names.length, PAGE_SIZE, function (page) {
-      personsPage = page;
-      renderPersonsList();
-    });
-  }
-
-  function exportPersonRecord(name, slug) {
-    const entries = getEntries().filter(function (e) { return e.name === name; });
-    if (entries.length === 0) return;
-
-    const headers = ['Date', 'Time', 'Name', 'Action'];
-    const rows = entries.map(function (e) {
-      return [entryDateKey(e), formatTime12(e), e.name, e.action === 'time_in' ? 'Time In' : 'Time Out'];
-    });
-    const csv = [headers.join(','), ...rows.map(function (r) {
-      return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
-    })].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'RDES-LogBook-' + slug + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   function exportFiltered() {
     const entries = applyFilters();
@@ -364,8 +302,6 @@
     renderNameFilter();
     logbookPage = 1;
     renderTable();
-    personsPage = 1;
-    renderPersonsList();
   }
 
   if (filterDate) filterDate.addEventListener('change', showCustomDateFields);
@@ -380,5 +316,4 @@
   showCustomDateFields();
   renderNameFilter();
   renderTable();
-  renderPersonsList();
 })();

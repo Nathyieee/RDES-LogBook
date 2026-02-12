@@ -91,7 +91,7 @@
     return { ok: true, user: session };
   }
 
-  async function signUp(name, email, password, role, ojtStartTime, ojtEndTime, ojtHoursPerDay) {
+  async function signUp(name, email, password, role, ojtStartTime, ojtEndTime, ojtHoursPerDay, ojtTotalHoursRequired) {
     const trimmedName = (name || '').trim();
     const trimmedEmail = (email || '').trim().toLowerCase();
     if (!trimmedName) return { ok: false, message: 'Name is required.' };
@@ -103,6 +103,8 @@
       if (!ojtStartTime || !ojtEndTime) return { ok: false, message: 'Please enter OJT start and end time.' };
       var hours = parseInt(ojtHoursPerDay, 10);
       if (isNaN(hours) || hours < 1 || hours > 24) return { ok: false, message: 'Hours per day must be between 1 and 24.' };
+      var totalHours = parseInt(ojtTotalHoursRequired, 10);
+      if (isNaN(totalHours) || totalHours < 1) return { ok: false, message: 'Total hours needed must be at least 1 hour.' };
     }
 
     const users = getUsers();
@@ -118,6 +120,7 @@
       newUser.ojtStartTime = ojtStartTime;
       newUser.ojtEndTime = ojtEndTime;
       newUser.ojtHoursPerDay = String(parseInt(ojtHoursPerDay, 10) || 8);
+      newUser.ojtTotalHoursRequired = String(parseInt(ojtTotalHoursRequired, 10) || '0');
     }
     users.push(newUser);
     saveUsers(users);

@@ -19,6 +19,8 @@
       <nav class="nav-links">
         <a href="index.html" class="nav-link">← Time In / Out</a>
         <a href="logbook.html" class="nav-link active">Logbook</a>
+        <a href="my-record.html" class="nav-link">My Record</a>
+        <a href="profile.html" class="nav-link">Profile</a>
         <a href="admin.html" class="nav-link" id="navAdmin" style="display:none">Approve users</a>
       </nav>
       <h1 class="logo">Logbook</h1>
@@ -82,7 +84,7 @@
                 <th>Time</th>
                 <th>Name</th>
                 <th>Action</th>
-                <th class="admin-only" id="deleteHeader" style="display:none;">Delete</th>
+                <th id="deleteHeader">Delete</th>
               </tr>
             </thead>
             <tbody id="logbookBody">
@@ -92,19 +94,10 @@
         <div class="pagination" id="logbookPagination" aria-label="Table pagination"></div>
         <p class="empty-log visible" id="emptyLog">No entries match the filters. Try changing filters or log time in/out on the main page.</p>
       </section>
-
-      <!-- OJT: own record only; Admin: Records by person (folder per name) -->
-      <section class="persons-card" id="personsCard">
-        <h2 class="persons-title" id="personsTitle">My record</h2>
-        <p class="persons-desc" id="personsDesc">Download your time in/out record for your OJT folder.</p>
-        <div class="persons-list" id="personsList"></div>
-        <div class="pagination" id="personsPagination" aria-label="Persons list pagination"></div>
-        <p class="empty-persons" id="emptyPersons">No entries yet. Use Time In / Time Out on the main page.</p>
-      </section>
     </main>
 
     <footer class="footer">
-      <p><a href="index.html">Time In / Out</a> · Logbook · File storage & dashboard — coming soon</p>
+      <p><a href="index.html">Time In / Out</a> · Logbook · <a href="my-record.html">My Record</a> · File storage & dashboard — coming soon</p>
     </footer>
   </div>
 
