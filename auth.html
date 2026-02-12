@@ -63,6 +63,23 @@
                 <option value="admin">Admin — Full access to logbook & system</option>
               </select>
             </div>
+            <div class="form-group ojt-schedule-group" id="ojtScheduleGroup">
+              <span class="ojt-schedule-title">OJT schedule</span>
+              <div class="form-row">
+                <div class="form-group form-group-half">
+                  <label for="signUpOjtStart">Start time</label>
+                  <input type="time" id="signUpOjtStart" value="08:00" aria-label="OJT start time">
+                </div>
+                <div class="form-group form-group-half">
+                  <label for="signUpOjtEnd">End time</label>
+                  <input type="time" id="signUpOjtEnd" value="17:00" aria-label="OJT end time">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="signUpOjtHours">Hours per day</label>
+                <input type="number" id="signUpOjtHours" min="1" max="24" value="8" placeholder="8" aria-label="Hours per day">
+              </div>
+            </div>
             <p class="auth-message" id="signUpMessage"></p>
             <button type="submit" class="btn btn-in btn-block" id="btnSignUp">Sign Up</button>
           </form>
@@ -108,6 +125,14 @@
       tabSignIn.addEventListener('click', function () { showPanel('signIn'); });
       tabSignUp.addEventListener('click', function () { showPanel('signUp'); });
 
+      var signUpRole = document.getElementById('signUpRole');
+      var ojtScheduleGroup = document.getElementById('ojtScheduleGroup');
+      function toggleOjtSchedule() {
+        ojtScheduleGroup.style.display = signUpRole && signUpRole.value === 'ojt' ? 'block' : 'none';
+      }
+      if (signUpRole) signUpRole.addEventListener('change', toggleOjtSchedule);
+      toggleOjtSchedule();
+
       formSignIn.addEventListener('submit', function (e) {
         e.preventDefault();
         var email = document.getElementById('signInEmail').value;
@@ -133,9 +158,15 @@
         var email = document.getElementById('signUpEmail').value;
         var password = document.getElementById('signUpPassword').value;
         var role = document.getElementById('signUpRole').value;
+        var ojtStart = document.getElementById('signUpOjtStart');
+        var ojtEnd = document.getElementById('signUpOjtEnd');
+        var ojtHours = document.getElementById('signUpOjtHours');
+        var ojtStartTime = ojtStart ? ojtStart.value : '';
+        var ojtEndTime = ojtEnd ? ojtEnd.value : '';
+        var ojtHoursPerDay = ojtHours ? ojtHours.value : '';
         signUpMessage.textContent = 'Creating account…';
         signUpMessage.classList.remove('error');
-        window.RDESAuth.signUp(name, email, password, role).then(function (result) {
+        window.RDESAuth.signUp(name, email, password, role, ojtStartTime, ojtEndTime, ojtHoursPerDay).then(function (result) {
           if (result.ok) {
             window.location.href = result.redirect || 'index.html';
           } else {

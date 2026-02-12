@@ -91,13 +91,19 @@
     return { ok: true, user: session };
   }
 
-  async function signUp(name, email, password, role) {
+  async function signUp(name, email, password, role, ojtStartTime, ojtEndTime, ojtHoursPerDay) {
     const trimmedName = (name || '').trim();
     const trimmedEmail = (email || '').trim().toLowerCase();
     if (!trimmedName) return { ok: false, message: 'Name is required.' };
     if (!trimmedEmail) return { ok: false, message: 'Email is required.' };
     if (!password || password.length < 4) return { ok: false, message: 'Password must be at least 4 characters.' };
     if (role !== 'ojt' && role !== 'admin') return { ok: false, message: 'Please select a role.' };
+
+    if (role === 'ojt') {
+      if (!ojtStartTime || !ojtEndTime) return { ok: false, message: 'Please enter OJT start and end time.' };
+      var hours = parseInt(ojtHoursPerDay, 10);
+      if (isNaN(hours) || hours < 1 || hours > 24) return { ok: false, message: 'Hours per day must be between 1 and 24.' };
+    }
 
     const users = getUsers();
     if (users.some(function (u) { return (u.email || '').toLowerCase() === trimmedEmail; })) {
@@ -108,6 +114,11 @@
     var isFirstUser = users.length === 0;
     var approved = isFirstUser && role === 'admin';
     const newUser = { email: trimmedEmail, name: trimmedName, passwordHash: passwordHash, role: role, approved: approved };
+    if (role === 'ojt') {
+      newUser.ojtStartTime = ojtStartTime;
+      newUser.ojtEndTime = ojtEndTime;
+      newUser.ojtHoursPerDay = String(parseInt(ojtHoursPerDay, 10) || 8);
+    }
     users.push(newUser);
     saveUsers(users);
 

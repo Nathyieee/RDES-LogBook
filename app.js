@@ -11,7 +11,7 @@
 
   const clockDisplay = document.getElementById('clockDisplay');
   const dateDisplay = document.getElementById('dateDisplay');
-  const userName = document.getElementById('userName');
+  const welcomeName = document.getElementById('welcomeName');
   const btnTimeIn = document.getElementById('btnTimeIn');
   const btnTimeOut = document.getElementById('btnTimeOut');
   const lastAction = document.getElementById('lastAction');
@@ -23,8 +23,8 @@
   const userInfo = document.getElementById('userInfo');
   const btnSignOut = document.getElementById('btnSignOut');
 
-  if (currentUser && userName) {
-    userName.value = currentUser.name;
+  if (currentUser && welcomeName) {
+    welcomeName.textContent = currentUser.name;
   }
   if (userInfo) {
     userInfo.textContent = currentUser ? currentUser.name + ' (' + (currentUser.role === 'admin' ? 'Admin' : 'OJT') + ')' : '';
@@ -58,6 +58,13 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   }
 
+  function getTodaysEntriesForUser(userName) {
+    const today = new Date().toLocaleDateString('en-PH');
+    return getEntries().filter(function (e) {
+      return e.date === today && e.name === userName;
+    });
+  }
+
   function addEntry(name, action) {
     const trimmed = (currentUser && currentUser.name) ? currentUser.name.trim() : (name || '').trim();
     if (!trimmed) {
@@ -66,6 +73,21 @@
       return;
     }
     lastAction.classList.remove('error');
+
+    const todaysEntries = getTodaysEntriesForUser(trimmed);
+    const alreadyTimeIn = todaysEntries.some(function (e) { return e.action === 'time_in'; });
+    const alreadyTimeOut = todaysEntries.some(function (e) { return e.action === 'time_out'; });
+
+    if (action === 'time_in' && alreadyTimeIn) {
+      lastAction.textContent = 'You have already timed in today. You can only time in once per day.';
+      lastAction.classList.add('error');
+      return;
+    }
+    if (action === 'time_out' && alreadyTimeOut) {
+      lastAction.textContent = 'You have already timed out today. You can only time out once per day.';
+      lastAction.classList.add('error');
+      return;
+    }
 
     const now = new Date();
     const entry = {
@@ -201,8 +223,8 @@
   }
 
   // ——— Event listeners ———
-  if (btnTimeIn) btnTimeIn.addEventListener('click', function () { addEntry(userName ? userName.value : '', 'time_in'); });
-  if (btnTimeOut) btnTimeOut.addEventListener('click', function () { addEntry(userName ? userName.value : '', 'time_out'); });
+  if (btnTimeIn) btnTimeIn.addEventListener('click', function () { addEntry('', 'time_in'); });
+  if (btnTimeOut) btnTimeOut.addEventListener('click', function () { addEntry('', 'time_out'); });
   if (filterBy) filterBy.addEventListener('change', function () { logbookPage = 1; renderLogbook(); });
   if (btnExport) btnExport.addEventListener('click', exportLogbook);
 
