@@ -144,20 +144,23 @@
   function applyFilters() {
     let entries = getEntries();
     if (isOjt && currentUser) entries = entries.filter(function (e) { return e.name === currentUser.name; });
-    const today = new Date().toLocaleDateString('en-PH');
-    const yesterday = (function () {
+
+    // Use normalized YYYY-MM-DD keys for date comparisons so that
+    // data coming from both localStorage and the database matches.
+    const todayKey = formatDateForInput(new Date());
+    const yesterdayKey = (function () {
       const d = new Date();
       d.setDate(d.getDate() - 1);
-      return d.toLocaleDateString('en-PH');
+      return formatDateForInput(d);
     })();
 
     let list = entries.slice();
 
     const dateVal = filterDate ? filterDate.value : 'all';
     if (dateVal === 'today') {
-      list = list.filter(function (e) { return e.date === today; });
+      list = list.filter(function (e) { return entryDateKey(e) === todayKey; });
     } else if (dateVal === 'yesterday') {
-      list = list.filter(function (e) { return e.date === yesterday; });
+      list = list.filter(function (e) { return entryDateKey(e) === yesterdayKey; });
     } else if (dateVal === 'custom' && filterDateFrom && filterDateTo) {
       const from = filterDateFrom.value;
       const to = filterDateTo.value;

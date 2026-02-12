@@ -55,8 +55,12 @@
       btn.addEventListener('click', function () {
         var email = btn.getAttribute('data-email');
         if (!email) return;
-        window.RDESAuth.approveUser(email).then(function (ok) {
-          if (ok) render();
+        window.RDESAuth.approveUser(email).then(function (result) {
+          if (result && result.ok) {
+            render();
+          } else {
+            alert(result && result.message ? result.message : 'Failed to approve user. Please try again.');
+          }
         });
       });
     });
@@ -68,11 +72,11 @@
         if (!window.confirm('Delete this account permanently? This will also remove their time log entries.')) {
           return;
         }
-        window.RDESAuth.deleteUser(email).then(function (ok) {
-          if (ok) {
+        window.RDESAuth.deleteUser(email).then(function (result) {
+          if (result && result.ok) {
             render();
           } else {
-            alert('Failed to delete user. Please try again.');
+            alert(result && result.message ? result.message : 'Failed to delete user. Please try again.');
           }
         });
       });

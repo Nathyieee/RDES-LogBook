@@ -148,7 +148,7 @@
       body: JSON.stringify({ action: 'approve_user', email: email })
     });
     const data = await res.json();
-    return !!data.ok;
+    return data;
   }
 
   async function deleteUserRemote(email) {
@@ -158,7 +158,7 @@
       body: JSON.stringify({ action: 'delete_user', email: email })
     });
     const data = await res.json();
-    return !!data.ok;
+    return data;
   }
 
   window.RDESAuth = {
