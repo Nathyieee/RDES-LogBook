@@ -17,16 +17,18 @@
     </header>
 
     <main class="main auth-main">
-      <div class="auth-card pending-card">
-        <h2 class="auth-title">Account pending approval</h2>
-        <p class="pending-message">You have signed up successfully. Your account must be approved by an administrator before you can sign in and use the system.</p>
-        <p class="pending-message muted">This applies to both OJT and Admin accounts. An existing approved admin will review and approve your request.</p>
-        <a href="auth.html" class="btn btn-in btn-block btn-center">Back to Sign in</a>
+      <div class="pending-card">
+        <div class="pending-icon" aria-hidden="true">✓</div>
+        <p class="pending-status">You’re signed up</p>
+        <h2 class="pending-title">Waiting for approval</h2>
+        <p class="pending-message">An administrator needs to approve your account before you can sign in. This applies to both OJT and Admin accounts.</p>
+        <p class="pending-next">Once approved, you can sign in and start using the system.</p>
+        <a href="auth.html" class="btn btn-in pending-btn">Back to Sign in</a>
       </div>
     </main>
 
     <footer class="footer">
-      <p>Contact your office admin if you need access sooner.</p>
+      <p>Need access sooner? Contact your office admin.</p>
     </footer>
   </div>
 </body>

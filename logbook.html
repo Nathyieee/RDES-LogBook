@@ -82,6 +82,7 @@
                 <th>Time</th>
                 <th>Name</th>
                 <th>Action</th>
+                <th class="admin-only" id="deleteHeader" style="display:none;">Delete</th>
               </tr>
             </thead>
             <tbody id="logbookBody">
@@ -105,6 +106,19 @@
     <footer class="footer">
       <p><a href="index.html">Time In / Out</a> · Logbook · File storage & dashboard — coming soon</p>
     </footer>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="deleteModal" style="display: none;">
+    <div class="modal">
+      <div class="modal-icon modal-icon-danger">⚠</div>
+      <h3 class="modal-title">Delete entry?</h3>
+      <p class="modal-message">This action cannot be undone. The entry will be permanently removed from the logbook.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-small btn-ghost" id="modalCancel">Cancel</button>
+        <button type="button" class="btn btn-small btn-delete" id="modalConfirm">Delete</button>
+      </div>
+    </div>
   </div>
 
   <script src="auth.js"></script>

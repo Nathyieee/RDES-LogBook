@@ -40,14 +40,17 @@
   const personsTitle = document.getElementById('personsTitle');
   const personsDesc = document.getElementById('personsDesc');
 
+  var deleteHeader = document.getElementById('deleteHeader');
   if (isOjt) {
     if (filterNameGroup) filterNameGroup.style.display = 'none';
     if (btnExportAll) btnExportAll.style.display = 'none';
     if (personsTitle) personsTitle.textContent = 'My record';
     if (personsDesc) personsDesc.textContent = 'Download your time in/out record for your OJT folder.';
+    if (deleteHeader) deleteHeader.style.display = 'none';
   } else {
     if (personsTitle) personsTitle.textContent = 'Records by person (OJT folder)';
     if (personsDesc) personsDesc.textContent = 'At the end of OJT, each person can download their own time in/out record as a file for their folder.';
+    if (deleteHeader) deleteHeader.style.display = '';
   }
 
   function getEntries() {
@@ -57,6 +60,53 @@
     } catch (_) {
       return [];
     }
+  }
+
+  function saveEntries(entries) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function showDeleteModal(entryId, callback) {
+    var modal = document.getElementById('deleteModal');
+    var btnCancel = document.getElementById('modalCancel');
+    var btnConfirm = document.getElementById('modalConfirm');
+    if (!modal || !btnCancel || !btnConfirm) return;
+
+    modal.style.display = 'flex';
+
+    function closeModal() {
+      modal.style.display = 'none';
+      btnCancel.removeEventListener('click', cancelHandler);
+      btnConfirm.removeEventListener('click', confirmHandler);
+      modal.removeEventListener('click', overlayHandler);
+    }
+
+    function cancelHandler() {
+      closeModal();
+    }
+
+    function confirmHandler() {
+      closeModal();
+      if (callback) callback();
+    }
+
+    function overlayHandler(e) {
+      if (e.target === modal) closeModal();
+    }
+
+    btnCancel.addEventListener('click', cancelHandler);
+    btnConfirm.addEventListener('click', confirmHandler);
+    modal.addEventListener('click', overlayHandler);
+  }
+
+  function deleteEntry(entryId) {
+    showDeleteModal(entryId, function () {
+      var entries = getEntries();
+      entries = entries.filter(function (e) { return e.id !== entryId; });
+      saveEntries(entries);
+      logbookPage = 1;
+      renderTable();
+    });
   }
 
   function getUniqueNames(entries) {
@@ -181,8 +231,18 @@
     logbookBody.innerHTML = pageEntries.map(function (e) {
       const actionClass = e.action === 'time_in' ? 'badge-in' : 'badge-out';
       const actionLabel = e.action === 'time_in' ? 'Time In' : 'Time Out';
-      return '<tr><td>' + escapeHtml(e.date) + '</td><td>' + escapeHtml(formatTime12(e)) + '</td><td>' + escapeHtml(e.name) + '</td><td><span class="badge ' + actionClass + '">' + actionLabel + '</span></td></tr>';
+      var deleteCell = isOjt ? '' : '<td><button type="button" class="btn btn-small btn-delete" data-id="' + escapeHtml(e.id) + '" aria-label="Delete entry">Delete</button></td>';
+      return '<tr><td>' + escapeHtml(e.date) + '</td><td>' + escapeHtml(formatTime12(e)) + '</td><td>' + escapeHtml(e.name) + '</td><td><span class="badge ' + actionClass + '">' + actionLabel + '</span></td>' + deleteCell + '</tr>';
     }).join('');
+
+    if (!isOjt) {
+      logbookBody.querySelectorAll('.btn-delete').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var entryId = btn.getAttribute('data-id');
+          if (entryId) deleteEntry(entryId);
+        });
+      });
+    }
 
     renderPagination(logbookPagination, logbookPage, entries.length, PAGE_SIZE, function (page) {
       logbookPage = page;
@@ -230,7 +290,7 @@
           '<span class="person-name">' + safeName + '</span>' +
           '<span class="person-count">' + count + ' record' + (count !== 1 ? 's' : '') + '</span>' +
         '</div>' +
-        '<button type="button" class="btn btn-small btn-primary btn-download-record" data-name="' + safeName + '" data-slug="' + escapeHtml(fileSlug) + '">Download my record</button>' +
+        '<button type="button" class="btn btn-small btn-primary btn-download-record" data-name="' + safeName + '" data-slug="' + escapeHtml(fileSlug) + '">' + (isOjt ? 'Download my record' : 'Download their Record') + '</button>' +
       '</div>';
     }).join('');
 
