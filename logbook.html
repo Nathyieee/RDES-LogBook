@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDES LogBook — Logbook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app logbook-page">
+    <header class="header">
+      <div class="user-bar" id="userBar">
+        <span class="user-info" id="userInfo"></span>
+        <button type="button" class="btn btn-small btn-ghost" id="btnSignOut">Sign out</button>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">← Time In / Out</a>
+        <a href="logbook.html" class="nav-link active">Logbook</a>
+        <a href="admin.html" class="nav-link" id="navAdmin" style="display:none">Approve users</a>
+      </nav>
+      <h1 class="logo">Logbook</h1>
+      <p class="tagline">Time In / Out records — filter by date or person</p>
+    </header>
+
+    <main class="main">
+      <!-- Filters (Admin: full filters; OJT: date/action only, own data) -->
+      <section class="filters-card" id="filtersCard">
+        <h2 class="filters-title">Filters</h2>
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label for="filterDate">Date</label>
+            <select id="filterDate" aria-label="Filter by date">
+              <option value="all">All dates</option>
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="custom">Date range</option>
+            </select>
+          </div>
+          <div class="filter-group filter-group-custom-date" id="customDateGroup" hidden>
+            <label for="filterDateFrom">From</label>
+            <input type="date" id="filterDateFrom" aria-label="From date">
+          </div>
+          <div class="filter-group filter-group-custom-date" id="customDateToGroup" hidden>
+            <label for="filterDateTo">To</label>
+            <input type="date" id="filterDateTo" aria-label="To date">
+          </div>
+          <div class="filter-group" id="filterNameGroup">
+            <label for="filterName">Person</label>
+            <select id="filterName" aria-label="Filter by person">
+              <option value="">All</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="filterAction">Action</label>
+            <select id="filterAction" aria-label="Filter by action">
+              <option value="all">All</option>
+              <option value="time_in">Time In only</option>
+              <option value="time_out">Time Out only</option>
+            </select>
+          </div>
+        </div>
+        <div class="filters-actions">
+          <button type="button" class="btn btn-small" id="btnApplyFilters">Apply</button>
+          <button type="button" class="btn btn-small btn-ghost" id="btnResetFilters">Reset</button>
+          <button type="button" class="btn btn-small btn-primary" id="btnExportAll">Export filtered (CSV)</button>
+        </div>
+      </section>
+
+      <!-- Today's log (quick view) -->
+      <section class="logbook-section">
+        <div class="logbook-header">
+          <h2>Entries <span class="entry-count" id="entryCount"></span></h2>
+        </div>
+        <div class="logbook-table-wrap">
+          <table class="logbook-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Name</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="logbookBody">
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="logbookPagination" aria-label="Table pagination"></div>
+        <p class="empty-log visible" id="emptyLog">No entries match the filters. Try changing filters or log time in/out on the main page.</p>
+      </section>
+
+      <!-- OJT: own record only; Admin: Records by person (folder per name) -->
+      <section class="persons-card" id="personsCard">
+        <h2 class="persons-title" id="personsTitle">My record</h2>
+        <p class="persons-desc" id="personsDesc">Download your time in/out record for your OJT folder.</p>
+        <div class="persons-list" id="personsList"></div>
+        <div class="pagination" id="personsPagination" aria-label="Persons list pagination"></div>
+        <p class="empty-persons" id="emptyPersons">No entries yet. Use Time In / Time Out on the main page.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p><a href="index.html">Time In / Out</a> · Logbook · File storage & dashboard — coming soon</p>
+    </footer>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="logbook.js"></script>
+</body>
+</html>

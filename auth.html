@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDES LogBook — Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app auth-app">
+    <header class="header">
+      <h1 class="logo">RDES LogBook</h1>
+      <p class="tagline">Office & OJT Time Tracking</p>
+    </header>
+
+    <main class="main auth-main">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab active" id="tabSignIn" aria-selected="true">Sign In</button>
+          <button type="button" class="auth-tab" id="tabSignUp" aria-selected="false">Sign Up</button>
+        </div>
+
+        <!-- Sign In -->
+        <div class="auth-panel active" id="panelSignIn">
+          <h2 class="auth-title">Sign in to your account</h2>
+          <form class="auth-form" id="formSignIn">
+            <div class="form-group">
+              <label for="signInEmail">Email</label>
+              <input type="email" id="signInEmail" required placeholder="you@example.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label for="signInPassword">Password</label>
+              <input type="password" id="signInPassword" required placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <p class="auth-message" id="signInMessage"></p>
+            <button type="submit" class="btn btn-in btn-block" id="btnSignIn">Sign In</button>
+          </form>
+        </div>
+
+        <!-- Sign Up -->
+        <div class="auth-panel" id="panelSignUp">
+          <h2 class="auth-title">Create an account</h2>
+          <form class="auth-form" id="formSignUp">
+            <div class="form-group">
+              <label for="signUpName">Full name</label>
+              <input type="text" id="signUpName" required placeholder="Juan Dela Cruz" autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label for="signUpEmail">Email</label>
+              <input type="email" id="signUpEmail" required placeholder="you@example.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label for="signUpPassword">Password</label>
+              <input type="password" id="signUpPassword" required minlength="4" placeholder="At least 4 characters" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label for="signUpRole">Role</label>
+              <select id="signUpRole" required aria-label="Account role">
+                <option value="ojt">OJT — Time in/out & my records only</option>
+                <option value="admin">Admin — Full access to logbook & system</option>
+              </select>
+            </div>
+            <p class="auth-message" id="signUpMessage"></p>
+            <button type="submit" class="btn btn-in btn-block" id="btnSignUp">Sign Up</button>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>Sign in or sign up to use the system.</p>
+    </footer>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    (function () {
+      if (window.RDESAuth && window.RDESAuth.getCurrentUser()) {
+        var u = window.RDESAuth.getCurrentUser();
+        if (u && u.approved !== false) window.location.href = 'index.html';
+        return;
+      }
+
+      var tabSignIn = document.getElementById('tabSignIn');
+      var tabSignUp = document.getElementById('tabSignUp');
+      var panelSignIn = document.getElementById('panelSignIn');
+      var panelSignUp = document.getElementById('panelSignUp');
+      var formSignIn = document.getElementById('formSignIn');
+      var formSignUp = document.getElementById('formSignUp');
+      var signInMessage = document.getElementById('signInMessage');
+      var signUpMessage = document.getElementById('signUpMessage');
+
+      function showPanel(which) {
+        var isSignIn = which === 'signIn';
+        tabSignIn.classList.toggle('active', isSignIn);
+        tabSignUp.classList.toggle('active', !isSignIn);
+        tabSignIn.setAttribute('aria-selected', isSignIn);
+        tabSignUp.setAttribute('aria-selected', !isSignIn);
+        panelSignIn.classList.toggle('active', isSignIn);
+        panelSignUp.classList.toggle('active', !isSignIn);
+        signInMessage.textContent = '';
+        signUpMessage.textContent = '';
+      }
+
+      tabSignIn.addEventListener('click', function () { showPanel('signIn'); });
+      tabSignUp.addEventListener('click', function () { showPanel('signUp'); });
+
+      formSignIn.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = document.getElementById('signInEmail').value;
+        var password = document.getElementById('signInPassword').value;
+        signInMessage.textContent = 'Signing in…';
+        signInMessage.classList.remove('error');
+        window.RDESAuth.signIn(email, password).then(function (result) {
+          if (result.ok) {
+            window.location.href = 'index.html';
+          } else {
+            signInMessage.textContent = result.message || 'Sign in failed.';
+            signInMessage.classList.add('error');
+          }
+        }).catch(function () {
+          signInMessage.textContent = 'Something went wrong. Try again.';
+          signInMessage.classList.add('error');
+        });
+      });
+
+      formSignUp.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var name = document.getElementById('signUpName').value;
+        var email = document.getElementById('signUpEmail').value;
+        var password = document.getElementById('signUpPassword').value;
+        var role = document.getElementById('signUpRole').value;
+        signUpMessage.textContent = 'Creating account…';
+        signUpMessage.classList.remove('error');
+        window.RDESAuth.signUp(name, email, password, role).then(function (result) {
+          if (result.ok) {
+            window.location.href = result.redirect || 'index.html';
+          } else {
+            signUpMessage.textContent = result.message || 'Sign up failed.';
+            signUpMessage.classList.add('error');
+          }
+        }).catch(function () {
+          signUpMessage.textContent = 'Something went wrong. Try again.';
+          signUpMessage.classList.add('error');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDES LogBook — Approve Users</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app logbook-page">
+    <header class="header">
+      <div class="user-bar" id="userBar">
+        <span class="user-info" id="userInfo"></span>
+        <button type="button" class="btn btn-small btn-ghost" id="btnSignOut">Sign out</button>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Time In / Out</a>
+        <a href="logbook.html" class="nav-link">Logbook</a>
+        <a href="admin.html" class="nav-link active">Approve users</a>
+      </nav>
+      <h1 class="logo">Approve users</h1>
+      <p class="tagline">Approve OJT and Admin accounts before they can sign in</p>
+    </header>
+
+    <main class="main">
+      <section class="filters-card">
+        <h2 class="filters-title">Users</h2>
+        <p class="admin-desc">New signups (OJT or Admin) must be approved here before they can sign in. Click <strong>Approve</strong> to grant access.</p>
+      </section>
+
+      <section class="logbook-section">
+        <div class="logbook-table-wrap">
+          <table class="logbook-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody">
+            </tbody>
+          </table>
+        </div>
+        <p class="empty-log" id="emptyUsers">No users yet. Sign up on the auth page to create the first account.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p><a href="index.html">Time In / Out</a> · <a href="logbook.html">Logbook</a> · Approve users</p>
+    </footer>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
