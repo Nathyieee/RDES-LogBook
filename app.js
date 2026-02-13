@@ -60,8 +60,8 @@
 
   async function sendEntryToServer(entry) {
     try {
-      if (!currentUser || !currentUser.id) return;
-      await fetch(LOGS_API_URL, {
+      if (!currentUser || !currentUser.id) return false;
+      var res = await fetch(LOGS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,12 +72,14 @@
           timestamp: entry.timestamp
         })
       });
+      var data = await res.json();
+      return !!(data && data.ok);
     } catch (_) {
-      // Silently ignore; local copy still works.
+      return false;
     }
   }
 
-  function addEntry(name, action) {
+  async function addEntry(name, action) {
     const trimmed = (currentUser && currentUser.name) ? currentUser.name.trim() : (name || '').trim();
     if (!trimmed) {
       lastAction.textContent = 'Please sign in again.';
@@ -115,11 +117,13 @@
     entries.unshift(entry);
     saveEntries(entries);
 
-    // Also send to shared database so other devices can see it.
-    sendEntryToServer(entry);
+    // Also send to shared database so admin can see it on the Logbook.
+    var sent = await sendEntryToServer(entry);
 
     const actionLabel = action === 'time_in' ? 'Time In' : 'Time Out';
-    lastAction.textContent = `${actionLabel} recorded for ${trimmed} at ${entry.time}.`;
+    lastAction.textContent = sent
+      ? `${actionLabel} recorded for ${trimmed} at ${entry.time}.`
+      : `${actionLabel} saved here. Sign out and sign in again so the admin can see it on the Logbook.`;
   }
 
   // ——— Event listeners ———

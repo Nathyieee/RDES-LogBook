@@ -4,10 +4,10 @@
 declare(strict_types=1);
 
 // TODO: Update these values to match your MySQL database.
-const RDES_DB_HOST = 'localhost';
-const RDES_DB_NAME = 'rdes_logbook';
-const RDES_DB_USER = 'root';
-const RDES_DB_PASS = '';
+const RDES_DB_HOST = 'if0_41139183_rdes_logbook_1';
+const RDES_DB_NAME = 'sql208.infinityfree.com';
+const RDES_DB_USER = 'if0_41139183';
+const RDES_DB_PASS = '09943442243Suya';
 
 /**
  * Get a shared PDO instance.

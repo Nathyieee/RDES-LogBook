@@ -34,6 +34,7 @@
   const emptyLog = document.getElementById('emptyLog');
   const entryCount = document.getElementById('entryCount');
   const logbookPagination = document.getElementById('logbookPagination');
+  const btnRefreshLogbook = document.getElementById('btnRefreshLogbook');
 
   var deleteHeader = document.getElementById('deleteHeader');
   if (isOjt) {
@@ -328,11 +329,22 @@
   if (btnResetFilters) btnResetFilters.addEventListener('click', resetFilters);
   if (btnExportAll) btnExportAll.addEventListener('click', exportFiltered);
 
+  if (btnRefreshLogbook) {
+    btnRefreshLogbook.addEventListener('click', function () {
+      btnRefreshLogbook.disabled = true;
+      syncEntriesFromServer().then(function () {
+        renderNameFilter();
+        renderTable();
+      }).finally(function () { btnRefreshLogbook.disabled = false; });
+    });
+  }
+
   if (filterName) filterName.addEventListener('change', renderTable);
   if (filterAction) filterAction.addEventListener('change', renderTable);
 
   async function init() {
-    if (filterDate) filterDate.value = 'today';
+    // Admin: default to "All" so they see every OJT time in/out. OJT: default to "Today".
+    if (filterDate) filterDate.value = isOjt ? 'today' : 'all';
     showCustomDateFields();
     await syncEntriesFromServer();
     renderNameFilter();
