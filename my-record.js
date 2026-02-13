@@ -4,7 +4,7 @@
   if (!window.RDESAuth || !window.RDESAuth.requireAuth()) return;
 
   var currentUser = window.RDESAuth.getCurrentUser();
-  var isOjt = currentUser && currentUser.role === 'ojt';
+  var isOjt = currentUser && String(currentUser.role || '').toLowerCase() === 'ojt';
 
   var userInfo = document.getElementById('userInfo');
   var btnSignOut = document.getElementById('btnSignOut');
@@ -81,6 +81,13 @@
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return y + '-' + m + '-' + day;
+  }
+
+  function formatDateDisplay(dateStr) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr + 'T12:00:00');
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' });
   }
 
   function entryDateKey(entry) {
@@ -190,7 +197,7 @@
 
     const headers = ['Date', 'Time', 'Name', 'Action'];
     const rows = entries.map(function (e) {
-      return [entryDateKey(e), formatTime12(e), e.name, e.action === 'time_in' ? 'Time In' : 'Time Out'];
+      return [formatDateDisplay(e.date), formatTime12(e), e.name, e.action === 'time_in' ? 'Time In' : 'Time Out'];
     });
     const csv = [headers.join(','), ...rows.map(function (r) {
       return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');

@@ -190,6 +190,13 @@
     return y + '-' + m + '-' + day;
   }
 
+  function formatDateDisplay(dateStr) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr + 'T12:00:00');
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
   function entryDateKey(entry) {
     var d = new Date(entry.timestamp || entry.date);
     return formatDateForInput(d);
@@ -309,7 +316,7 @@
       const actionClass = e.action === 'time_in' ? 'badge-in' : 'badge-out';
       const actionLabel = e.action === 'time_in' ? 'Time In' : 'Time Out';
       var deleteCell = isOjt ? '' : '<td><button type="button" class="btn btn-small btn-delete" data-id="' + escapeHtml(e.id) + '" aria-label="Delete entry">Delete</button></td>';
-      return '<tr><td>' + escapeHtml(e.date) + '</td><td>' + escapeHtml(formatTime12(e)) + '</td><td>' + escapeHtml(e.name) + '</td><td><span class="badge ' + actionClass + '">' + actionLabel + '</span></td>' + deleteCell + '</tr>';
+      return '<tr><td>' + escapeHtml(formatDateDisplay(e.date)) + '</td><td>' + escapeHtml(formatTime12(e)) + '</td><td>' + escapeHtml(e.name) + '</td><td><span class="badge ' + actionClass + '">' + actionLabel + '</span></td>' + deleteCell + '</tr>';
     }).join('');
 
     if (isOjt && logbookBody) {
@@ -352,7 +359,7 @@
 
     const headers = ['Date', 'Time', 'Name', 'Action'];
     const rows = entries.map(function (e) {
-      return [entryDateKey(e), formatTime12(e), e.name, e.action === 'time_in' ? 'Time In' : 'Time Out'];
+      return [formatDateDisplay(e.date), formatTime12(e), e.name, e.action === 'time_in' ? 'Time In' : 'Time Out'];
     });
     const csv = [headers.join(','), ...rows.map(function (r) {
       return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
