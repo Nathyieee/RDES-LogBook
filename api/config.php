@@ -5,10 +5,10 @@ declare(strict_types=1);
 
 // TODO: Update these values to match your MySQL database.
 // HOST = MySQL server address.  NAME = database name (not the server).
-const RDES_DB_HOST = 'sql208.byetcluster.com';
-const RDES_DB_NAME = 'if0_41139183_rdes_logbook_1';
-const RDES_DB_USER = 'if0_41139183';
-const RDES_DB_PASS = '09943442243Suya';
+const RDES_DB_HOST = 'sql309.byetcluster.com';
+const RDES_DB_NAME = 'if0_41145475_RDES_Logs';
+const RDES_DB_USER = 'if0_41145475';
+const RDES_DB_PASS = '123456789RDES';
 
 /**
  * Get a shared PDO instance.
