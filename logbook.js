@@ -4,7 +4,7 @@
   if (!window.RDESAuth || !window.RDESAuth.requireAuth()) return;
 
   var currentUser = window.RDESAuth.getCurrentUser();
-  var isOjt = currentUser && currentUser.role === 'ojt';
+  var isOjt = currentUser && String(currentUser.role || '').toLowerCase() === 'ojt';
 
   var userInfo = document.getElementById('userInfo');
   var btnSignOut = document.getElementById('btnSignOut');
@@ -16,8 +16,10 @@
   const STORAGE_KEY = 'rdes-logbook-entries';
   const LOGS_API_URL = 'api/logs.php';
   const PAGE_SIZE = 10;
+  const SKIP_SYNC_AFTER_DELETE_MS = 5000;
 
   var logbookPage = 1;
+  var lastDeleteTime = 0;
 
   const filterDate = document.getElementById('filterDate');
   const filterDateFrom = document.getElementById('filterDateFrom');
@@ -36,14 +38,27 @@
   const logbookPagination = document.getElementById('logbookPagination');
   const btnRefreshLogbook = document.getElementById('btnRefreshLogbook');
 
-  var deleteHeader = document.getElementById('deleteHeader');
+  if (isOjt) {
+    document.body.classList.add('user-role-ojt');
+  }
+
+  var logbookHeaderRow = document.getElementById('logbookHeaderRow');
   if (isOjt) {
     if (filterNameGroup) filterNameGroup.style.display = 'none';
     if (btnExportAll) btnExportAll.style.display = 'none';
-    // OJT users can delete their own entries, so show delete header
-    if (deleteHeader) deleteHeader.style.display = '';
+    if (logbookHeaderRow) {
+      var deleteTh = document.getElementById('deleteHeader');
+      if (deleteTh && deleteTh.parentNode) deleteTh.parentNode.removeChild(deleteTh);
+      var ths = logbookHeaderRow.getElementsByTagName('th');
+      if (ths.length > 4 && ths[4].textContent.trim().toLowerCase() === 'delete') ths[4].parentNode.removeChild(ths[4]);
+    }
   } else {
-    if (deleteHeader) deleteHeader.style.display = '';
+    if (logbookHeaderRow && !document.getElementById('deleteHeader')) {
+      var th = document.createElement('th');
+      th.setAttribute('id', 'deleteHeader');
+      th.textContent = 'Delete';
+      logbookHeaderRow.appendChild(th);
+    }
   }
 
   function getEntries() {
@@ -68,6 +83,7 @@
       });
       const data = await res.json();
       if (!data.ok || !Array.isArray(data.entries)) return;
+      if (Date.now() - lastDeleteTime < SKIP_SYNC_AFTER_DELETE_MS) return;
       saveEntries(data.entries);
     } catch (_) {
       // If it fails, keep whatever is in localStorage.
@@ -138,6 +154,7 @@
         .then(function (result) {
           var data = result.data;
           if (result.ok && data && data.ok) {
+            lastDeleteTime = Date.now();
             var entries = getEntries();
             var before = entries.length;
             entries = entries.filter(function (e) {
@@ -283,27 +300,22 @@
     logbookBody.innerHTML = pageEntries.map(function (e) {
       const actionClass = e.action === 'time_in' ? 'badge-in' : 'badge-out';
       const actionLabel = e.action === 'time_in' ? 'Time In' : 'Time Out';
-      // Show delete button for admins (all entries) or OJT users (only their own entries)
-      var canDelete = !isOjt || (isOjt && currentUser && e.name === currentUser.name);
-      var deleteCell = canDelete ? '<td><button type="button" class="btn btn-small btn-delete" data-id="' + escapeHtml(e.id) + '" aria-label="Delete entry">Delete</button></td>' : '<td></td>';
+      var deleteCell = isOjt ? '' : '<td><button type="button" class="btn btn-small btn-delete" data-id="' + escapeHtml(e.id) + '" aria-label="Delete entry">Delete</button></td>';
       return '<tr><td>' + escapeHtml(e.date) + '</td><td>' + escapeHtml(formatTime12(e)) + '</td><td>' + escapeHtml(e.name) + '</td><td><span class="badge ' + actionClass + '">' + actionLabel + '</span></td>' + deleteCell + '</tr>';
     }).join('');
 
-    // Add delete event listeners for all delete buttons (both admin and OJT)
+    if (isOjt && logbookBody) {
+      var rows = logbookBody.querySelectorAll('tr');
+      for (var r = 0; r < rows.length; r++) {
+        var cells = rows[r].getElementsByTagName('td');
+        if (cells.length > 4) cells[4].parentNode.removeChild(cells[4]);
+      }
+    }
+
     logbookBody.querySelectorAll('.btn-delete').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var entryId = btn.getAttribute('data-id');
-        if (entryId != null && String(entryId).trim() !== '') {
-          if (isOjt && currentUser) {
-            var entries = getEntries();
-            var entry = entries.find(function (e) { return String(e.id) === String(entryId); });
-            if (entry && entry.name !== currentUser.name) {
-              alert('You can only delete your own entries.');
-              return;
-            }
-          }
-          deleteEntry(entryId);
-        }
+        if (entryId != null && String(entryId).trim() !== '') deleteEntry(entryId);
       });
     });
 

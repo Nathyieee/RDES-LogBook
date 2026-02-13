@@ -685,6 +685,13 @@ body {
   background: var(--bg);
 }
 
+/* OJT: no Delete column or button on logbook */
+body.user-role-ojt .logbook-table th:nth-child(5),
+body.user-role-ojt .logbook-table td:nth-child(5),
+body.user-role-ojt .logbook-table .btn-delete {
+  display: none !important;
+}
+
 .badge {
   display: inline-block;
   padding: 0.25rem 0.6rem;
