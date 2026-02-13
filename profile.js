@@ -13,6 +13,8 @@
   var profileEmail = document.getElementById('profileEmail');
   var profileRole = document.getElementById('profileRole');
   var ojtProgressCard = document.getElementById('ojtProgressCard');
+  var timeRemainingHours = document.getElementById('timeRemainingHours');
+  var timeRemainingDays = document.getElementById('timeRemainingDays');
   var statTotalHours = document.getElementById('statTotalHours');
   var statHoursCompleted = document.getElementById('statHoursCompleted');
   var statRemainingHours = document.getElementById('statRemainingHours');
@@ -29,17 +31,7 @@
   if (navAdmin) navAdmin.style.display = currentUser.role === 'admin' ? '' : 'none';
 
   const STORAGE_KEY = 'rdes-logbook-entries';
-  const USERS_KEY = 'rdes-users';
   const LOGS_API_URL = 'api/logs.php';
-
-  function getUsers() {
-    try {
-      const raw = localStorage.getItem(USERS_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (_) {
-      return [];
-    }
-  }
 
   function getEntries() {
     try {
@@ -117,38 +109,66 @@
     return totalHours;
   }
 
+  function renderTimeRemaining(remainingHours, remainingDays) {
+    var h = Number(remainingHours);
+    var d = Number(remainingDays);
+    if (isNaN(h)) h = 0;
+    if (isNaN(d)) d = 0;
+    if (timeRemainingHours) timeRemainingHours.textContent = h.toFixed(2);
+    if (timeRemainingDays) timeRemainingDays.textContent = d;
+  }
+
   function renderProfile() {
     if (profileName) profileName.textContent = currentUser.name || '—';
     if (profileEmail) profileEmail.textContent = currentUser.email || '—';
-    if (profileRole) profileRole.textContent = currentUser.role === 'admin' ? 'Admin' : 'OJT';
+    if (profileRole) profileRole.textContent = (currentUser.role === 'admin' ? 'Admin' : 'OJT');
 
-    if (currentUser.role !== 'ojt') {
-      if (ojtProgressCard) ojtProgressCard.style.display = 'none';
-      return;
-    }
-
-    var users = getUsers();
-    var userData = users.find(function (u) { return (u.email || '').toLowerCase() === (currentUser.email || '').toLowerCase(); });
-    if (!userData) {
+    var role = String(currentUser.role || '').toLowerCase();
+    if (role !== 'ojt') {
       if (ojtProgressCard) ojtProgressCard.style.display = 'none';
       return;
     }
 
     if (ojtProgressCard) ojtProgressCard.style.display = 'block';
 
-    var totalHoursRequired = parseInt(userData.ojtTotalHoursRequired || '0', 10);
-    var hoursPerDay = parseInt(userData.ojtHoursPerDay || '8', 10);
-    var startTime = userData.ojtStartTime || '';
-    var endTime = userData.ojtEndTime || '';
+    renderOjtProgress(0, 8, '', '', 0, 0);
+
+    if (window.RDESAuth && window.RDESAuth.getUserProfile) {
+      window.RDESAuth.getUserProfile(currentUser.email).then(function (data) {
+        if (!data || !data.ok || !data.profile) {
+          renderOjtProgress(0, 8, '', '', 0, 0);
+          return;
+        }
+        var p = data.profile;
+        var totalHoursRequired = parseInt(p.ojtTotalHoursRequired || p.ojt_total_hours_required || '0', 10);
+        var hoursPerDay = parseInt(p.ojtHoursPerDay || p.ojt_hours_per_day || '8', 10);
+        var startTime = p.ojtStartTime || p.ojt_start_time || '';
+        var endTime = p.ojtEndTime || p.ojt_end_time || '';
+        var completed = calculateActualHoursCompleted(getEntries(), currentUser.name);
+        var remaining = Math.max(0, totalHoursRequired - completed);
+        var days = hoursPerDay > 0 ? Math.ceil(remaining / hoursPerDay) : 0;
+        renderOjtProgress(totalHoursRequired, hoursPerDay, startTime, endTime, remaining, days);
+      }).catch(function () {
+        var completed = calculateActualHoursCompleted(getEntries(), currentUser.name);
+        renderOjtProgress(0, 8, '', '', 0, 0);
+      });
+    }
+  }
+
+  function renderOjtProgress(totalHoursRequired, hoursPerDay, startTime, endTime, remainingHours, remainingDays) {
+    var entries = getEntries();
+    var hoursCompleted = calculateActualHoursCompleted(entries, currentUser.name);
+    if (totalHoursRequired > 0) {
+      remainingHours = Math.max(0, totalHoursRequired - hoursCompleted);
+      remainingDays = hoursPerDay > 0 ? Math.ceil(remainingHours / hoursPerDay) : 0;
+    }
+
+    renderTimeRemaining(remainingHours, remainingDays);
 
     if (ojtStartTime) ojtStartTime.textContent = formatTime12(startTime);
     if (ojtEndTime) ojtEndTime.textContent = formatTime12(endTime);
     if (ojtHoursPerDay) ojtHoursPerDay.textContent = hoursPerDay + ' hours';
 
-    var entries = getEntries();
-    var hoursCompleted = calculateActualHoursCompleted(entries, currentUser.name);
-    var remainingHours = Math.max(0, totalHoursRequired - hoursCompleted);
-    var remainingDays = hoursPerDay > 0 ? Math.ceil(remainingHours / hoursPerDay) : 0;
     var progress = totalHoursRequired > 0 ? Math.min(100, Math.round((hoursCompleted / totalHoursRequired) * 100)) : 0;
 
     if (statTotalHours) statTotalHours.textContent = totalHoursRequired.toLocaleString() + ' hrs';

@@ -73,6 +73,21 @@ function handle_add_entry(PDO $pdo, array $input): void
     $entryTime = $dt->format('H:i:s');
     $createdAt = $dt->format('Y-m-d H:i:s');
 
+    $check = $pdo->prepare(
+        'SELECT id FROM log_entries WHERE user_id = :user_id AND entry_date = :entry_date AND action = :action LIMIT 1'
+    );
+    $check->execute([
+        'user_id'    => $userId,
+        'entry_date' => $entryDate,
+        'action'     => $logAction,
+    ]);
+    if ($check->fetch()) {
+        $msg = $logAction === 'time_in'
+            ? 'You have already timed in today. You can only time in once per day.'
+            : 'You have already timed out today. You can only time out once per day.';
+        rdes_json(['ok' => false, 'message' => $msg], 400);
+    }
+
     $stmt = $pdo->prepare(
         'INSERT INTO log_entries (user_id, action, entry_date, entry_time, created_at, notes)
          VALUES (:user_id, :action, :entry_date, :entry_time, :created_at, :notes)'

@@ -50,7 +50,20 @@
       <!-- OJT Progress Card (only for OJT) -->
       <section class="profile-card" id="ojtProgressCard" style="display:none;">
         <h2 class="profile-section-title">OJT Progress</h2>
-        
+
+        <!-- Time Remaining (counting hours/days) -->
+        <div class="time-remaining-block" id="timeRemainingBlock">
+          <h3 class="time-remaining-title">Time Remaining</h3>
+          <div class="time-remaining-display" id="timeRemainingDisplay">
+            <span class="time-remaining-value" id="timeRemainingHours">—</span>
+            <span class="time-remaining-label">hours left</span>
+          </div>
+          <div class="time-remaining-display time-remaining-days" id="timeRemainingDaysWrap">
+            <span class="time-remaining-value" id="timeRemainingDays">—</span>
+            <span class="time-remaining-label">days left</span>
+          </div>
+        </div>
+
         <div class="progress-stats">
           <div class="stat-card stat-card-primary">
             <div class="stat-label">Total Hours Required</div>

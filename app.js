@@ -51,10 +51,24 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   }
 
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function entryDateMatches(entryDate) {
+    if (!entryDate) return false;
+    var key = todayKey();
+    if (entryDate === key) return true;
+    if (/^\d{4}-\d{2}-\d{2}/.test(String(entryDate))) return String(entryDate).substring(0, 10) === key;
+    var x = new Date(entryDate);
+    return !isNaN(x.getTime()) && (x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0')) === key;
+  }
+
   function getTodaysEntriesForUser(userName) {
-    const today = new Date().toLocaleDateString('en-PH');
+    var key = todayKey();
     return getEntries().filter(function (e) {
-      return e.date === today && e.name === userName;
+      return entryDateMatches(e.date) && e.name === userName;
     });
   }
 

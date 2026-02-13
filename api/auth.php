@@ -36,6 +36,9 @@ switch ($action) {
     case 'delete_user':
         handle_delete_user($pdo, $input);
         break;
+    case 'get_user_profile':
+        handle_get_user_profile($pdo, $input);
+        break;
     default:
         rdes_json(['ok' => false, 'message' => 'Unknown action'], 400);
 }
@@ -166,6 +169,39 @@ function handle_sign_in(PDO $pdo, array $input): void
     ];
 
     rdes_json(['ok' => true, 'user' => $user]);
+}
+
+/**
+ * Get a user's profile including OJT fields (for Profile page time rendering).
+ * Expects: email
+ */
+function handle_get_user_profile(PDO $pdo, array $input): void
+{
+    $email = strtolower(trim((string)($input['email'] ?? '')));
+    if ($email === '') {
+        rdes_json(['ok' => false, 'message' => 'Email is required.'], 400);
+    }
+    $stmt = $pdo->prepare(
+        'SELECT name, email, role, approved,
+                ojt_start_time, ojt_end_time, ojt_hours_per_day, ojt_total_hours_required
+         FROM users WHERE email = :email LIMIT 1'
+    );
+    $stmt->execute(['email' => $email]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        rdes_json(['ok' => false, 'message' => 'User not found.'], 404);
+    }
+    $profile = [
+        'name'                     => $row['name'],
+        'email'                    => $row['email'],
+        'role'                     => $row['role'],
+        'approved'                 => (bool)$row['approved'],
+        'ojtStartTime'             => $row['ojt_start_time'],
+        'ojtEndTime'               => $row['ojt_end_time'],
+        'ojtHoursPerDay'           => (int)$row['ojt_hours_per_day'],
+        'ojtTotalHoursRequired'    => (int)$row['ojt_total_hours_required'],
+    ];
+    rdes_json(['ok' => true, 'profile' => $profile]);
 }
 
 function handle_list_users(PDO $pdo): void

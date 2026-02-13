@@ -179,6 +179,16 @@
     return data;
   }
 
+  async function getUserProfile(email) {
+    const res = await fetch(AUTH_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_user_profile', email: email })
+    });
+    const data = await res.json();
+    return data;
+  }
+
   window.RDESAuth = {
     getCurrentUser: getCurrentUser,
     requireAuth: requireAuth,
@@ -188,6 +198,29 @@
     // Remote, DB-backed helpers for admin screens
     getUsersList: getUsersListRemote,
     approveUser: approveUserRemote,
-    deleteUser: deleteUserRemote
+    deleteUser: deleteUserRemote,
+    getUserProfile: getUserProfile
   };
+
+  // Auto log out OJT after 3 minutes of inactivity (admin not affected)
+  (function startOjtInactivityLogout() {
+    if (document.URL.indexOf('auth.html') !== -1) return;
+    var user = getCurrentUser();
+    if (!user || String(user.role || '').toLowerCase() !== 'ojt') return;
+
+    var INACTIVITY_MS = 3 * 60 * 1000;
+    var timerId = null;
+
+    function resetTimer() {
+      if (timerId) clearTimeout(timerId);
+      timerId = setTimeout(function () {
+        signOut();
+      }, INACTIVITY_MS);
+    }
+
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'click', 'touchstart'].forEach(function (ev) {
+      document.addEventListener(ev, resetTimer, { passive: true });
+    });
+    resetTimer();
+  })();
 })();
