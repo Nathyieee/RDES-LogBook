@@ -89,6 +89,14 @@
   }
 
   function formatTime12(entry) {
+    if (entry.date && entry.time) {
+      var parts = String(entry.time).trim().split(':');
+      var h = parseInt(parts[0], 10) || 0;
+      var m = (parts.length > 1 && parseInt(parts[1], 10)) || 0;
+      var s = (parts.length > 2 && parseInt(parts[2], 10)) || 0;
+      var d = new Date(entry.date + 'T' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'));
+      return d.toLocaleTimeString('en-PH', { hour12: true, hour: 'numeric', minute: '2-digit', second: '2-digit' });
+    }
     var d = new Date(entry.timestamp || entry.date);
     return d.toLocaleTimeString('en-PH', { hour12: true, hour: 'numeric', minute: '2-digit', second: '2-digit' });
   }

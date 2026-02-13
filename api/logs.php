@@ -55,16 +55,18 @@ function handle_add_entry(PDO $pdo, array $input): void
         rdes_json(['ok' => false, 'message' => 'Invalid action.'], 400);
     }
 
+    $manila = new DateTimeZone('Asia/Manila');
     $dt = null;
     if ($tsString !== '') {
         try {
             $dt = new DateTime($tsString);
+            $dt->setTimezone($manila);
         } catch (Exception $e) {
             $dt = null;
         }
     }
     if (!$dt) {
-        $dt = new DateTime('now', new DateTimeZone('Asia/Manila'));
+        $dt = new DateTime('now', $manila);
     }
 
     $entryDate = $dt->format('Y-m-d');
@@ -231,13 +233,14 @@ function handle_list_entries(PDO $pdo): void
     $stmt = $pdo->query($sql);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $manila = new DateTimeZone('Asia/Manila');
     $entries = [];
     foreach ($rows as $row) {
         $created = $row['created_at'] ?? ($row['entry_date'] . ' ' . $row['entry_time']);
         try {
-            $dt = new DateTime($created);
+            $dt = new DateTime($created, $manila);
         } catch (Exception $e) {
-            $dt = new DateTime('now', new DateTimeZone('Asia/Manila'));
+            $dt = new DateTime('now', $manila);
         }
 
         $entries[] = [
