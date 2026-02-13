@@ -47,12 +47,40 @@ function handle_add_entry(PDO $pdo, array $input): void
     $name      = trim((string)($input['name'] ?? ''));
     $logAction = (string)($input['logAction'] ?? '');
     $tsString  = (string)($input['timestamp'] ?? '');
+    $latitude  = isset($input['latitude']) ? (float)$input['latitude'] : null;
+    $longitude = isset($input['longitude']) ? (float)$input['longitude'] : null;
 
     if ($userId <= 0 || $name === '') {
         rdes_json(['ok' => false, 'message' => 'User is required. Please sign in again.'], 400);
     }
     if (!in_array($logAction, ['time_in', 'time_out'], true)) {
         rdes_json(['ok' => false, 'message' => 'Invalid action.'], 400);
+    }
+
+    // Non-admin: require location and enforce campus-only (OJT and any role other than admin)
+    $stmt = $pdo->prepare('SELECT role FROM users WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $role = $row ? strtolower(trim((string)$row['role'])) : '';
+    $isAdmin = ($role === 'admin');
+
+    if (!$isAdmin) {
+        if ($latitude === null || $longitude === null) {
+            rdes_json(['ok' => false, 'message' => 'Location is required. Please enable location to record Time In/Out on campus.'], 400);
+        }
+        // Reject invalid or fake coordinates (0,0 or obviously wrong)
+        if (abs($latitude) < 1e-6 && abs($longitude) < 1e-6) {
+            rdes_json(['ok' => false, 'message' => 'Invalid location. Please enable GPS and try again when you are on campus.'], 400);
+        }
+        $dist = rdes_distance_meters(
+            (float) RDES_CAMPUS_LAT,
+            (float) RDES_CAMPUS_LNG,
+            $latitude,
+            $longitude
+        );
+        if ($dist > (float) RDES_CAMPUS_RADIUS_METERS) {
+            rdes_json(['ok' => false, 'message' => 'You are not on campus. Time In/Out is only allowed when you are at or near the school. Please go to campus and try again.'], 403);
+        }
     }
 
     $manila = new DateTimeZone('Asia/Manila');

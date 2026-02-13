@@ -24,6 +24,8 @@
   }
   var navAdmin = document.getElementById('navAdmin');
   if (navAdmin) navAdmin.style.display = currentUser && currentUser.role === 'admin' ? '' : 'none';
+  var locationNote = document.getElementById('locationNote');
+  if (locationNote) locationNote.style.display = currentUser && currentUser.role === 'admin' ? 'none' : '';
   if (btnSignOut) btnSignOut.addEventListener('click', function () { window.RDESAuth.signOut(); });
 
   // ——— Live clock ———
@@ -72,21 +74,26 @@
     });
   }
 
-  async function sendEntryToServer(entry) {
+  async function sendEntryToServer(entry, position) {
     if (!currentUser || !currentUser.id) {
       return { ok: false, message: 'Your session is missing user id. Sign out, sign in again, then try Time In.' };
+    }
+    var payload = {
+      action: 'add_entry',
+      userId: currentUser.id,
+      name: entry.name,
+      logAction: entry.action,
+      timestamp: entry.timestamp
+    };
+    if (position && position.coords) {
+      payload.latitude = position.coords.latitude;
+      payload.longitude = position.coords.longitude;
     }
     try {
       var res = await fetch(LOGS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'add_entry',
-          userId: currentUser.id,
-          name: entry.name,
-          logAction: entry.action,
-          timestamp: entry.timestamp
-        })
+        body: JSON.stringify(payload)
       });
       var data = await res.json();
       if (data && data.ok) return { ok: true, entryId: data.entry && data.entry.id };
@@ -120,6 +127,34 @@
       return;
     }
 
+    // OJT must be on campus: get location before recording
+    var position = null;
+    if (currentUser && currentUser.role !== 'admin') {
+      try {
+        position = await new Promise(function (resolve, reject) {
+          if (!navigator.geolocation) {
+            reject(new Error('UNSUPPORTED'));
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+          });
+        });
+      } catch (err) {
+        var msg = 'Time In/Out is only allowed on campus. ';
+        if (err.code === 1) msg += 'Please allow location access and try again.';
+        else if (err.code === 2) msg += 'Location unavailable. Check your device and try again.';
+        else if (err.code === 3) msg += 'Location request timed out. Please try again.';
+        else if (err.message === 'UNSUPPORTED') msg += 'Your browser does not support location. Use a supported device.';
+        else msg += 'Please enable location and try again.';
+        lastAction.textContent = msg;
+        lastAction.classList.add('error');
+        return;
+      }
+    }
+
     const now = new Date();
     const entry = {
       id: now.getTime() + '-' + Math.random().toString(36).slice(2, 9),
@@ -130,14 +165,14 @@
       time: now.toLocaleTimeString('en-PH', { hour12: true, hour: 'numeric', minute: '2-digit', second: '2-digit' })
     };
 
-    const entries = getEntries();
-    entries.unshift(entry);
-    saveEntries(entries);
-
-    var result = await sendEntryToServer(entry);
+    var result = await sendEntryToServer(entry, position);
 
     const actionLabel = action === 'time_in' ? 'Time In' : 'Time Out';
     if (result.ok) {
+      // Only save to localStorage after server accepted (so out-of-range never appears as success)
+      const entries = getEntries();
+      entries.unshift(entry);
+      saveEntries(entries);
       if (result.entryId) {
         var tempId = entry.id;
         entry.id = result.entryId;
