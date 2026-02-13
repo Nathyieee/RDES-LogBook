@@ -25,6 +25,9 @@ switch ($action) {
     case 'add_entry_manual':
         handle_add_entry_manual($pdo, $input);
         break;
+    case 'delete_entry':
+        handle_delete_entry($pdo, $input);
+        break;
     case 'list_entries':
         handle_list_entries($pdo);
         break;
@@ -170,6 +173,44 @@ function handle_add_entry_manual(PDO $pdo, array $input): void
         'time'      => $entryTime,
     ];
     rdes_json(['ok' => true, 'entry' => $entry]);
+}
+
+/**
+ * Delete a log entry. Admin can delete any; OJT can delete only their own.
+ *
+ * Expected JSON: entryId, userId (person requesting the delete)
+ */
+function handle_delete_entry(PDO $pdo, array $input): void
+{
+    $entryId = (int)($input['entryId'] ?? 0);
+    $requestUserId = (int)($input['userId'] ?? 0);
+    if ($entryId <= 0 || $requestUserId <= 0) {
+        rdes_json(['ok' => false, 'message' => 'Entry ID and user session required.'], 400);
+    }
+
+    $stmt = $pdo->prepare('SELECT role FROM users WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $requestUserId]);
+    $requester = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$requester) {
+        rdes_json(['ok' => false, 'message' => 'Invalid session. Sign in again.'], 403);
+    }
+
+    $stmt = $pdo->prepare('SELECT user_id FROM log_entries WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $entryId]);
+    $entry = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$entry) {
+        rdes_json(['ok' => false, 'message' => 'Entry not found.'], 404);
+    }
+
+    $entryUserId = (int)$entry['user_id'];
+    $isAdmin = $requester['role'] === 'admin';
+    if (!$isAdmin && $entryUserId !== $requestUserId) {
+        rdes_json(['ok' => false, 'message' => 'You can only delete your own entries.'], 403);
+    }
+
+    $stmt = $pdo->prepare('DELETE FROM log_entries WHERE id = :id');
+    $stmt->execute(['id' => $entryId]);
+    rdes_json(['ok' => true]);
 }
 
 /**

@@ -109,11 +109,34 @@
 
   function deleteEntry(entryId) {
     showDeleteModal(entryId, function () {
-      var entries = getEntries();
-      entries = entries.filter(function (e) { return e.id !== entryId; });
-      saveEntries(entries);
-      logbookPage = 1;
-      renderTable();
+      if (!currentUser || !currentUser.id) {
+        alert('Session expired. Please sign in again.');
+        return;
+      }
+      fetch(LOGS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete_entry',
+          entryId: entryId,
+          userId: currentUser.id
+        })
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data && data.ok) {
+            var entries = getEntries();
+            entries = entries.filter(function (e) { return String(e.id) !== String(entryId); });
+            saveEntries(entries);
+            logbookPage = 1;
+            renderTable();
+          } else {
+            alert((data && data.message) ? data.message : 'Could not delete entry. Try again.');
+          }
+        })
+        .catch(function () {
+          alert('Could not reach server. Check your connection.');
+        });
     });
   }
 
