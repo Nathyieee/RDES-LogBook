@@ -59,8 +59,10 @@
   }
 
   async function sendEntryToServer(entry) {
+    if (!currentUser || !currentUser.id) {
+      return { ok: false, message: 'Your session is missing user id. Sign out, sign in again, then try Time In.' };
+    }
     try {
-      if (!currentUser || !currentUser.id) return false;
       var res = await fetch(LOGS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,9 +75,10 @@
         })
       });
       var data = await res.json();
-      return !!(data && data.ok);
+      if (data && data.ok) return { ok: true, entryId: data.entry && data.entry.id };
+      return { ok: false, message: (data && data.message) ? data.message : 'Server could not save your time. Try again.' };
     } catch (_) {
-      return false;
+      return { ok: false, message: 'Could not reach server. Check your connection and try again.' };
     }
   }
 
@@ -117,13 +120,16 @@
     entries.unshift(entry);
     saveEntries(entries);
 
-    // Also send to shared database so admin can see it on the Logbook.
-    var sent = await sendEntryToServer(entry);
+    var result = await sendEntryToServer(entry);
 
     const actionLabel = action === 'time_in' ? 'Time In' : 'Time Out';
-    lastAction.textContent = sent
-      ? `${actionLabel} recorded for ${trimmed} at ${entry.time}.`
-      : `${actionLabel} saved here. Sign out and sign in again so the admin can see it on the Logbook.`;
+    if (result.ok) {
+      var idNote = result.entryId ? ' (saved as ID ' + result.entryId + ')' : '';
+      lastAction.textContent = actionLabel + ' recorded for ' + trimmed + ' at ' + entry.time + '.' + idNote;
+    } else {
+      lastAction.textContent = result.message || (actionLabel + ' could not be saved. Try again.');
+      lastAction.classList.add('error');
+    }
   }
 
   // ——— Event listeners ———
