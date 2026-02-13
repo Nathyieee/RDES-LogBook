@@ -33,12 +33,7 @@ switch ($action) {
  * Add a new time log entry.
  *
  * Expected JSON:
- * {
- *   "userId": 1,
- *   "name": "Juan Dela Cruz",
- *   "logAction": "time_in" | "time_out",
- *   "timestamp": "2026-02-12T08:00:00.000Z" // optional; server will use now() if missing
- * }
+ *   userId, name, logAction ("time_in"|"time_out"), timestamp (optional)
  */
 function handle_add_entry(PDO $pdo, array $input): void
 {
@@ -54,7 +49,6 @@ function handle_add_entry(PDO $pdo, array $input): void
         rdes_json(['ok' => false, 'message' => 'Invalid action.'], 400);
     }
 
-    // Parse timestamp from client or fallback to now (Asia/Manila).
     $dt = null;
     if ($tsString !== '') {
         try {
@@ -87,7 +81,6 @@ function handle_add_entry(PDO $pdo, array $input): void
 
     $id = (int)$pdo->lastInsertId();
 
-    // Return an entry object similar to what the JS code expects.
     $entry = [
         'id'        => $id,
         'name'      => $name,
@@ -140,4 +133,3 @@ function handle_list_entries(PDO $pdo): void
 
     rdes_json(['ok' => true, 'entries' => $entries]);
 }
-

@@ -1,22 +1,17 @@
 <?php
-// RDES LogBook - Simple auth API (users table)
+// RDES LogBook - Auth API (users table)
 
 declare(strict_types=1);
 
 require __DIR__ . '/config.php';
 
-/**
- * Very small router for auth actions.
- *
- * Accepts JSON POST with:
- *   { "action": "sign_up" | "sign_in" | "list_users" | "approve_user", ... }
- */
+/** Auth API: sign_up, sign_in, list_users, approve_user, delete_user. */
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     rdes_json(['ok' => false, 'message' => 'Method not allowed'], 405);
 }
 
-$input = rdes_read_json_input();
+$input  = rdes_read_json_input();
 $action = $input['action'] ?? '';
 
 try {
@@ -45,19 +40,12 @@ switch ($action) {
         rdes_json(['ok' => false, 'message' => 'Unknown action'], 400);
 }
 
-/**
- * Handle user registration.
- *
- * Expected fields:
- * - name, email, password, role ("admin" or "ojt")
- * - ojtStartTime, ojtEndTime, ojtHoursPerDay, ojtTotalHoursRequired (for OJT)
- */
 function handle_sign_up(PDO $pdo, array $input): void
 {
-    $name = trim((string)($input['name'] ?? ''));
-    $email = strtolower(trim((string)($input['email'] ?? '')));
+    $name     = trim((string)($input['name'] ?? ''));
+    $email    = strtolower(trim((string)($input['email'] ?? '')));
     $password = (string)($input['password'] ?? '');
-    $role = (string)($input['role'] ?? '');
+    $role     = (string)($input['role'] ?? '');
 
     if ($name === '') {
         rdes_json(['ok' => false, 'message' => 'Name is required.'], 400);
@@ -72,27 +60,25 @@ function handle_sign_up(PDO $pdo, array $input): void
         rdes_json(['ok' => false, 'message' => 'Please select a valid role.'], 400);
     }
 
-    // Check duplicate email
     $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
     $stmt->execute(['email' => $email]);
     if ($stmt->fetch()) {
         rdes_json(['ok' => false, 'message' => 'An account with this email already exists.'], 400);
     }
 
-    // First admin user can be auto-approved
-    $totalUsers = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+    $totalUsers  = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
     $isFirstUser = $totalUsers === 0;
-    $approved = $isFirstUser && $role === 'admin' ? 1 : 0;
+    $approved    = $isFirstUser && $role === 'admin' ? 1 : 0;
 
-    $ojtStartTime = null;
-    $ojtEndTime = null;
-    $ojtHoursPerDay = null;
+    $ojtStartTime          = null;
+    $ojtEndTime            = null;
+    $ojtHoursPerDay        = null;
     $ojtTotalHoursRequired = null;
 
     if ($role === 'ojt') {
-        $ojtStartTime = (string)($input['ojtStartTime'] ?? '');
-        $ojtEndTime = (string)($input['ojtEndTime'] ?? '');
-        $ojtHoursPerDay = (int)($input['ojtHoursPerDay'] ?? 0);
+        $ojtStartTime          = (string)($input['ojtStartTime'] ?? '');
+        $ojtEndTime            = (string)($input['ojtEndTime'] ?? '');
+        $ojtHoursPerDay        = (int)($input['ojtHoursPerDay'] ?? 0);
         $ojtTotalHoursRequired = (int)($input['ojtTotalHoursRequired'] ?? 0);
 
         if ($ojtStartTime === '' || $ojtEndTime === '') {
@@ -106,7 +92,6 @@ function handle_sign_up(PDO $pdo, array $input): void
         }
     }
 
-    // Hash password (same SHA-256 as current JS)
     $passwordHash = hash('sha256', $password);
 
     $insert = $pdo->prepare(
@@ -115,29 +100,29 @@ function handle_sign_up(PDO $pdo, array $input): void
     );
 
     $insert->execute([
-        'name' => $name,
-        'email' => $email,
-        'password_hash' => $passwordHash,
-        'role' => $role,
-        'approved' => $approved,
-        'ojt_start_time' => $ojtStartTime !== '' ? $ojtStartTime : null,
-        'ojt_end_time' => $ojtEndTime !== '' ? $ojtEndTime : null,
-        'ojt_hours_per_day' => $ojtHoursPerDay > 0 ? $ojtHoursPerDay : null,
+        'name'                     => $name,
+        'email'                    => $email,
+        'password_hash'            => $passwordHash,
+        'role'                     => $role,
+        'approved'                 => $approved,
+        'ojt_start_time'           => $ojtStartTime !== '' ? $ojtStartTime : null,
+        'ojt_end_time'             => $ojtEndTime !== '' ? $ojtEndTime : null,
+        'ojt_hours_per_day'        => $ojtHoursPerDay > 0 ? $ojtHoursPerDay : null,
         'ojt_total_hours_required' => $ojtTotalHoursRequired > 0 ? $ojtTotalHoursRequired : null,
     ]);
 
     $id = (int)$pdo->lastInsertId();
 
     $user = [
-        'id' => $id,
-        'name' => $name,
-        'email' => $email,
-        'role' => $role,
-        'approved' => (bool)$approved,
-        'ojtStartTime' => $ojtStartTime,
-        'ojtEndTime' => $ojtEndTime,
-        'ojtHoursPerDay' => $ojtHoursPerDay,
-        'ojtTotalHoursRequired' => $ojtTotalHoursRequired,
+        'id'                     => $id,
+        'name'                   => $name,
+        'email'                  => $email,
+        'role'                   => $role,
+        'approved'                => (bool)$approved,
+        'ojtStartTime'           => $ojtStartTime,
+        'ojtEndTime'             => $ojtEndTime,
+        'ojtHoursPerDay'         => $ojtHoursPerDay,
+        'ojtTotalHoursRequired'  => $ojtTotalHoursRequired,
     ];
 
     if ($approved === 1) {
@@ -147,12 +132,9 @@ function handle_sign_up(PDO $pdo, array $input): void
     rdes_json(['ok' => true, 'user' => null, 'redirect' => 'pending-approval.html']);
 }
 
-/**
- * Handle sign in.
- */
 function handle_sign_in(PDO $pdo, array $input): void
 {
-    $email = strtolower(trim((string)($input['email'] ?? '')));
+    $email    = strtolower(trim((string)($input['email'] ?? '')));
     $password = (string)($input['password'] ?? '');
 
     if ($email === '' || $password === '') {
@@ -176,19 +158,16 @@ function handle_sign_in(PDO $pdo, array $input): void
     }
 
     $user = [
-        'id' => (int)$row['id'],
-        'name' => $row['name'],
-        'email' => $row['email'],
-        'role' => $row['role'],
+        'id'       => (int)$row['id'],
+        'name'     => $row['name'],
+        'email'    => $row['email'],
+        'role'     => $row['role'],
         'approved' => true,
     ];
 
     rdes_json(['ok' => true, 'user' => $user]);
 }
 
-/**
- * List users for admin screen.
- */
 function handle_list_users(PDO $pdo): void
 {
     $stmt = $pdo->query('SELECT name, email, role, approved FROM users ORDER BY name ASC');
@@ -196,9 +175,9 @@ function handle_list_users(PDO $pdo): void
 
     $users = array_map(static function (array $row): array {
         return [
-            'name' => $row['name'],
-            'email' => $row['email'],
-            'role' => $row['role'],
+            'name'    => $row['name'],
+            'email'   => $row['email'],
+            'role'    => $row['role'],
             'approved' => (bool)$row['approved'],
         ];
     }, $rows);
@@ -206,9 +185,6 @@ function handle_list_users(PDO $pdo): void
     rdes_json(['ok' => true, 'users' => $users]);
 }
 
-/**
- * Approve a user (set approved = 1).
- */
 function handle_approve_user(PDO $pdo, array $input): void
 {
     $email = strtolower(trim((string)($input['email'] ?? '')));
@@ -226,12 +202,6 @@ function handle_approve_user(PDO $pdo, array $input): void
     rdes_json(['ok' => true]);
 }
 
-/**
- * Permanently delete a user and their log entries.
- *
- * After deletion, the same email can be used to register again
- * because the UNIQUE email row is removed.
- */
 function handle_delete_user(PDO $pdo, array $input): void
 {
     $email = strtolower(trim((string)($input['email'] ?? '')));
@@ -239,7 +209,6 @@ function handle_delete_user(PDO $pdo, array $input): void
         rdes_json(['ok' => false, 'message' => 'Email is required.'], 400);
     }
 
-    // Find user id first
     $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
     $stmt->execute(['email' => $email]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -248,15 +217,11 @@ function handle_delete_user(PDO $pdo, array $input): void
     }
     $userId = (int)$row['id'];
 
-    // Delete related log entries so there are no orphaned records.
     $delLogs = $pdo->prepare('DELETE FROM log_entries WHERE user_id = :uid');
     $delLogs->execute(['uid' => $userId]);
 
-    // Delete the user record.
     $delUser = $pdo->prepare('DELETE FROM users WHERE id = :uid');
     $delUser->execute(['uid' => $userId]);
 
     rdes_json(['ok' => true]);
 }
-
-

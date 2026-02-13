@@ -343,13 +343,22 @@
   if (filterAction) filterAction.addEventListener('change', renderTable);
 
   async function init() {
-    // Admin: default to "All" so they see every OJT time in/out. OJT: default to "Today".
     if (filterDate) filterDate.value = isOjt ? 'today' : 'all';
     showCustomDateFields();
     await syncEntriesFromServer();
     renderNameFilter();
     renderTable();
   }
+
+  // When user opens or returns to Logbook, re-fetch so new Time In/Out entries show.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      syncEntriesFromServer().then(function () {
+        renderNameFilter();
+        renderTable();
+      });
+    }
+  });
 
   init();
 })();

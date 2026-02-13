@@ -67,17 +67,35 @@
   }
 
   async function signIn(email, password) {
-    // Send credentials to PHP API (server checks password)
     const payload = { action: 'sign_in', email: email, password: password };
-    const res = await fetch(AUTH_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!data.ok) return { ok: false, message: data.message || 'Sign in failed.' };
-    const user = data.user || {};
-    const session = { email: user.email, name: user.name, role: user.role, approved: true, id: user.id };
+    var res;
+    try {
+      var controller = new AbortController();
+      var timeoutId = setTimeout(function () { controller.abort(); }, 15000);
+      res = await fetch(AUTH_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        return { ok: false, message: 'Connection timed out. Check your connection and try again.' };
+      }
+      return { ok: false, message: 'Cannot reach server. Check your connection and try again.' };
+    }
+    var data;
+    try {
+      data = await res.json();
+    } catch (_) {
+      return { ok: false, message: 'Invalid response from server. Try again.' };
+    }
+    if (!data || !data.ok) {
+      return { ok: false, message: (data && data.message) ? data.message : 'Sign in failed.' };
+    }
+    var user = data.user || {};
+    var session = { email: user.email, name: user.name, role: user.role, approved: true, id: user.id };
     setCurrentUser(session);
     return { ok: true, user: session };
   }
