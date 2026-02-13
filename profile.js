@@ -6,6 +6,10 @@
   var currentUser = window.RDESAuth.getCurrentUser();
   if (!currentUser) return;
 
+  var role = String(currentUser.role !== undefined ? currentUser.role : '').toLowerCase();
+  var isAdmin = role === 'admin';
+  var isOjt = role === 'ojt';
+
   var userInfo = document.getElementById('userInfo');
   var btnSignOut = document.getElementById('btnSignOut');
   var navAdmin = document.getElementById('navAdmin');
@@ -26,9 +30,9 @@
   var ojtEndTime = document.getElementById('ojtEndTime');
   var ojtHoursPerDay = document.getElementById('ojtHoursPerDay');
 
-  if (userInfo) userInfo.textContent = currentUser.name + ' (' + (currentUser.role === 'admin' ? 'Admin' : 'OJT') + ')';
+  if (userInfo) userInfo.textContent = currentUser.name + ' (' + (isAdmin ? 'Admin' : 'OJT') + ')';
   if (btnSignOut) btnSignOut.addEventListener('click', function () { window.RDESAuth.signOut(); });
-  if (navAdmin) navAdmin.style.display = currentUser.role === 'admin' ? '' : 'none';
+  if (navAdmin) navAdmin.style.display = isAdmin ? '' : 'none';
 
   const STORAGE_KEY = 'rdes-logbook-entries';
   const LOGS_API_URL = 'api/logs.php';
@@ -121,10 +125,9 @@
   function renderProfile() {
     if (profileName) profileName.textContent = currentUser.name || '—';
     if (profileEmail) profileEmail.textContent = currentUser.email || '—';
-    if (profileRole) profileRole.textContent = (currentUser.role === 'admin' ? 'Admin' : 'OJT');
+    if (profileRole) profileRole.textContent = isAdmin ? 'Admin' : 'OJT';
 
-    var role = String(currentUser.role || '').toLowerCase();
-    if (role !== 'ojt') {
+    if (!isOjt) {
       if (ojtProgressCard) ojtProgressCard.style.display = 'none';
       return;
     }
@@ -133,8 +136,9 @@
 
     renderOjtProgress(0, 8, '', '', 0, 0);
 
-    if (window.RDESAuth && window.RDESAuth.getUserProfile) {
-      window.RDESAuth.getUserProfile(currentUser.email).then(function (data) {
+    var profileEmailForApi = (currentUser.email || '').trim().toLowerCase();
+    if (window.RDESAuth && window.RDESAuth.getUserProfile && profileEmailForApi) {
+      window.RDESAuth.getUserProfile(profileEmailForApi).then(function (data) {
         if (!data || !data.ok || !data.profile) {
           renderOjtProgress(0, 8, '', '', 0, 0);
           return;

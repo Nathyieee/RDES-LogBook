@@ -4,14 +4,16 @@
   if (!window.RDESAuth || !window.RDESAuth.requireAuth()) return;
 
   var currentUser = window.RDESAuth.getCurrentUser();
-  var isOjt = currentUser && String(currentUser.role || '').toLowerCase() === 'ojt';
+  var role = String(currentUser && currentUser.role !== undefined ? currentUser.role : '').toLowerCase();
+  var isAdmin = role === 'admin';
+  var isOjt = role === 'ojt';
 
   var userInfo = document.getElementById('userInfo');
   var btnSignOut = document.getElementById('btnSignOut');
-  if (userInfo) userInfo.textContent = currentUser ? currentUser.name + ' (' + (currentUser.role === 'admin' ? 'Admin' : 'OJT') + ')' : '';
+  if (userInfo) userInfo.textContent = currentUser ? currentUser.name + ' (' + (isAdmin ? 'Admin' : 'OJT') + ')' : '';
   if (btnSignOut) btnSignOut.addEventListener('click', function () { window.RDESAuth.signOut(); });
   var navAdmin = document.getElementById('navAdmin');
-  if (navAdmin) navAdmin.style.display = currentUser && currentUser.role === 'admin' ? '' : 'none';
+  if (navAdmin) navAdmin.style.display = isAdmin ? '' : 'none';
 
   const STORAGE_KEY = 'rdes-logbook-entries';
   const LOGS_API_URL = 'api/logs.php';
@@ -38,12 +40,18 @@
   const logbookPagination = document.getElementById('logbookPagination');
   const btnRefreshLogbook = document.getElementById('btnRefreshLogbook');
 
-  if (isOjt) {
-    document.body.classList.add('user-role-ojt');
-  }
+  if (isOjt) document.body.classList.add('user-role-ojt');
+  if (!isAdmin) document.body.classList.add('user-role-not-admin');
 
   var logbookHeaderRow = document.getElementById('logbookHeaderRow');
-  if (isOjt) {
+  if (isAdmin) {
+    if (logbookHeaderRow && !document.getElementById('deleteHeader')) {
+      var th = document.createElement('th');
+      th.setAttribute('id', 'deleteHeader');
+      th.textContent = 'Delete';
+      logbookHeaderRow.appendChild(th);
+    }
+  } else {
     if (filterNameGroup) filterNameGroup.style.display = 'none';
     if (btnExportAll) btnExportAll.style.display = 'none';
     if (logbookHeaderRow) {
@@ -51,13 +59,6 @@
       if (deleteTh && deleteTh.parentNode) deleteTh.parentNode.removeChild(deleteTh);
       var ths = logbookHeaderRow.getElementsByTagName('th');
       if (ths.length > 4 && ths[4].textContent.trim().toLowerCase() === 'delete') ths[4].parentNode.removeChild(ths[4]);
-    }
-  } else {
-    if (logbookHeaderRow && !document.getElementById('deleteHeader')) {
-      var th = document.createElement('th');
-      th.setAttribute('id', 'deleteHeader');
-      th.textContent = 'Delete';
-      logbookHeaderRow.appendChild(th);
     }
   }
 
@@ -315,11 +316,11 @@
     logbookBody.innerHTML = pageEntries.map(function (e) {
       const actionClass = e.action === 'time_in' ? 'badge-in' : 'badge-out';
       const actionLabel = e.action === 'time_in' ? 'Time In' : 'Time Out';
-      var deleteCell = isOjt ? '' : '<td><button type="button" class="btn btn-small btn-delete" data-id="' + escapeHtml(e.id) + '" aria-label="Delete entry">Delete</button></td>';
+      var deleteCell = isAdmin ? '<td><button type="button" class="btn btn-small btn-delete" data-id="' + escapeHtml(e.id) + '" aria-label="Delete entry">Delete</button></td>' : '';
       return '<tr><td>' + escapeHtml(formatDateDisplay(e.date)) + '</td><td>' + escapeHtml(formatTime12(e)) + '</td><td>' + escapeHtml(e.name) + '</td><td><span class="badge ' + actionClass + '">' + actionLabel + '</span></td>' + deleteCell + '</tr>';
     }).join('');
 
-    if (isOjt && logbookBody) {
+    if (!isAdmin && logbookBody) {
       var rows = logbookBody.querySelectorAll('tr');
       for (var r = 0; r < rows.length; r++) {
         var cells = rows[r].getElementsByTagName('td');

@@ -184,7 +184,7 @@ function handle_get_user_profile(PDO $pdo, array $input): void
     $stmt = $pdo->prepare(
         'SELECT name, email, role, approved,
                 ojt_start_time, ojt_end_time, ojt_hours_per_day, ojt_total_hours_required
-         FROM users WHERE email = :email LIMIT 1'
+         FROM users WHERE LOWER(TRIM(email)) = :email LIMIT 1'
     );
     $stmt->execute(['email' => $email]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);

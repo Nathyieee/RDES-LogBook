@@ -685,10 +685,13 @@ body {
   background: var(--bg);
 }
 
-/* OJT: no Delete column or button on logbook */
+/* Non-admin: no Delete column or button on logbook (OJT and any other role) */
 body.user-role-ojt .logbook-table th:nth-child(5),
 body.user-role-ojt .logbook-table td:nth-child(5),
-body.user-role-ojt .logbook-table .btn-delete {
+body.user-role-ojt .logbook-table .btn-delete,
+body.user-role-not-admin .logbook-table th:nth-child(5),
+body.user-role-not-admin .logbook-table td:nth-child(5),
+body.user-role-not-admin .logbook-table .btn-delete {
   display: none !important;
 }
 
