@@ -243,6 +243,10 @@ body {
   color: var(--out);
 }
 
+.auth-message.success {
+  color: var(--success);
+}
+
 .btn-block {
   width: 100%;
   margin-top: 0.25rem;

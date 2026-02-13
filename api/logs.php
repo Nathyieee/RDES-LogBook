@@ -22,6 +22,9 @@ switch ($action) {
     case 'add_entry':
         handle_add_entry($pdo, $input);
         break;
+    case 'add_entry_manual':
+        handle_add_entry_manual($pdo, $input);
+        break;
     case 'list_entries':
         handle_list_entries($pdo);
         break;
@@ -90,6 +93,82 @@ function handle_add_entry(PDO $pdo, array $input): void
         'time'      => $entryTime,
     ];
 
+    rdes_json(['ok' => true, 'entry' => $entry]);
+}
+
+/**
+ * Admin-only: add a time log entry for a past date/time (e.g. to backfill missing days).
+ *
+ * Expected JSON:
+ *   createdByUserId (admin's user id), userEmail (OJT email), logAction, entryDate (Y-m-d), entryTime (H:i or H:i:s)
+ */
+function handle_add_entry_manual(PDO $pdo, array $input): void
+{
+    $adminId = (int)($input['createdByUserId'] ?? 0);
+    if ($adminId <= 0) {
+        rdes_json(['ok' => false, 'message' => 'Admin session required.'], 403);
+    }
+    $stmt = $pdo->prepare('SELECT role FROM users WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $adminId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || $row['role'] !== 'admin') {
+        rdes_json(['ok' => false, 'message' => 'Only admins can add manual entries.'], 403);
+    }
+
+    $userEmail = strtolower(trim((string)($input['userEmail'] ?? '')));
+    if ($userEmail === '') {
+        rdes_json(['ok' => false, 'message' => 'Please select a user.'], 400);
+    }
+    $stmt = $pdo->prepare('SELECT id, name FROM users WHERE email = :email LIMIT 1');
+    $stmt->execute(['email' => $userEmail]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) {
+        rdes_json(['ok' => false, 'message' => 'User not found.'], 404);
+    }
+    $userId = (int)$user['id'];
+    $name   = (string)$user['name'];
+
+    $logAction = (string)($input['logAction'] ?? '');
+    if (!in_array($logAction, ['time_in', 'time_out'], true)) {
+        rdes_json(['ok' => false, 'message' => 'Invalid action. Choose Time In or Time Out.'], 400);
+    }
+
+    $entryDate = trim((string)($input['entryDate'] ?? ''));
+    $entryTime = trim((string)($input['entryTime'] ?? ''));
+    if ($entryDate === '' || $entryTime === '') {
+        rdes_json(['ok' => false, 'message' => 'Date and time are required.'], 400);
+    }
+    $dt = null;
+    try {
+        $dt = new DateTime($entryDate . ' ' . $entryTime, new DateTimeZone('Asia/Manila'));
+    } catch (Exception $e) {
+        rdes_json(['ok' => false, 'message' => 'Invalid date or time format.'], 400);
+    }
+    $entryDate = $dt->format('Y-m-d');
+    $entryTime = $dt->format('H:i:s');
+    $createdAt = $dt->format('Y-m-d H:i:s');
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO log_entries (user_id, action, entry_date, entry_time, created_at, notes)
+         VALUES (:user_id, :action, :entry_date, :entry_time, :created_at, :notes)'
+    );
+    $stmt->execute([
+        'user_id'    => $userId,
+        'action'     => $logAction,
+        'entry_date' => $entryDate,
+        'entry_time' => $entryTime,
+        'created_at' => $createdAt,
+        'notes'      => null,
+    ]);
+
+    $id = (int)$pdo->lastInsertId();
+    $entry = [
+        'id'        => $id,
+        'name'      => $name,
+        'action'    => $logAction,
+        'date'      => $entryDate,
+        'time'      => $entryTime,
+    ];
     rdes_json(['ok' => true, 'entry' => $entry]);
 }
 
