@@ -210,6 +210,9 @@ function handle_delete_entry(PDO $pdo, array $input): void
 
     $stmt = $pdo->prepare('DELETE FROM log_entries WHERE id = :id');
     $stmt->execute(['id' => $entryId]);
+    if ($stmt->rowCount() === 0) {
+        rdes_json(['ok' => false, 'message' => 'Entry not found or already deleted. Try refreshing the page.'], 404);
+    }
     rdes_json(['ok' => true]);
 }
 

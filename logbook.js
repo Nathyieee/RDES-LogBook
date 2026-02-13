@@ -108,28 +108,46 @@
   }
 
   function deleteEntry(entryId) {
-    showDeleteModal(entryId, function () {
+    var idToDelete = entryId == null ? '' : String(entryId).trim();
+    if (!idToDelete) return;
+
+    showDeleteModal(idToDelete, function () {
       if (!currentUser || !currentUser.id) {
         alert('Session expired. Please sign in again.');
         return;
       }
+
       fetch(LOGS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'delete_entry',
-          entryId: entryId,
+          entryId: /^\d+$/.test(idToDelete) ? parseInt(idToDelete, 10) : idToDelete,
           userId: currentUser.id
         })
       })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          if (data && data.ok) {
+        .then(function (res) {
+          return res.text().then(function (text) {
+            try {
+              return { ok: res.ok, data: JSON.parse(text) };
+            } catch (_) {
+              return { ok: false, data: { message: 'Invalid response from server.' } };
+            }
+          });
+        })
+        .then(function (result) {
+          var data = result.data;
+          if (result.ok && data && data.ok) {
             var entries = getEntries();
-            entries = entries.filter(function (e) { return String(e.id) !== String(entryId); });
-            saveEntries(entries);
-            logbookPage = 1;
-            renderTable();
+            var before = entries.length;
+            entries = entries.filter(function (e) {
+              return String(e.id).trim() !== idToDelete;
+            });
+            if (entries.length < before) {
+              saveEntries(entries);
+              logbookPage = 1;
+              renderTable();
+            }
           } else {
             alert((data && data.message) ? data.message : 'Could not delete entry. Try again.');
           }
@@ -275,11 +293,10 @@
     logbookBody.querySelectorAll('.btn-delete').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var entryId = btn.getAttribute('data-id');
-        if (entryId) {
-          // For OJT users, verify the entry belongs to them before deleting
+        if (entryId != null && String(entryId).trim() !== '') {
           if (isOjt && currentUser) {
             var entries = getEntries();
-            var entry = entries.find(function (e) { return e.id === entryId; });
+            var entry = entries.find(function (e) { return String(e.id) === String(entryId); });
             if (entry && entry.name !== currentUser.name) {
               alert('You can only delete your own entries.');
               return;

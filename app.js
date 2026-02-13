@@ -124,6 +124,16 @@
 
     const actionLabel = action === 'time_in' ? 'Time In' : 'Time Out';
     if (result.ok) {
+      if (result.entryId) {
+        var tempId = entry.id;
+        entry.id = result.entryId;
+        var list = getEntries();
+        var idx = list.findIndex(function (e) { return e.id === tempId; });
+        if (idx >= 0) {
+          list[idx].id = result.entryId;
+          saveEntries(list);
+        }
+      }
       var idNote = result.entryId ? ' (saved as ID ' + result.entryId + ')' : '';
       lastAction.textContent = actionLabel + ' recorded for ' + trimmed + ' at ' + entry.time + '.' + idNote;
     } else {
